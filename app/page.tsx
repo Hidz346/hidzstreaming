@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Flame, Compass, BookOpen, Tv, X, ArrowRight } from 'lucide-react';
+import { Flame, Compass, BookOpen, Tv, X, ArrowRight, BadgeCheck, Zap, Layers, Shield, Sparkles } from 'lucide-react';
 
 export default function HomePage() {
   const [showPopup, setShowPopup] = useState(false);
@@ -59,6 +59,92 @@ export default function HomePage() {
               <p className="text-zinc-500 text-[10px] sm:text-xs mt-0.5">Light Novel</p>
             </div>
           </Link>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════
+          TENTANG HIDZSTREAMING
+         ═══════════════════════════════════════════════════ */}
+      <div className="px-4 sm:px-6 lg:px-8 mt-6 lg:mt-8">
+        <div className="relative overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900">
+
+          {/* Background logo, full bleed */}
+          <div className="absolute inset-0">
+            <img
+              src="https://www.gobox.my.id/file/rRgIMPaNAtLj.png"
+              alt=""
+              aria-hidden="true"
+              className="w-full h-full object-cover opacity-20"
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/30 via-zinc-950/85 to-zinc-950"></div>
+          </div>
+
+          {/* Content */}
+          <div className="relative z-10 p-5 sm:p-7 lg:p-8">
+
+            {/* Brand */}
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-11 h-11 rounded-full overflow-hidden border-2 border-zinc-700 shrink-0 bg-zinc-800">
+                <img
+                  src="https://www.gobox.my.id/file/rRgIMPaNAtLj.png"
+                  alt="HidzStreaming"
+                  className="w-full h-full object-cover"
+                  onError={(e) => { e.currentTarget.src = '/logo.png'; }}
+                />
+              </div>
+              <div className="flex items-center gap-1.5">
+                <h2 className="font-extrabold text-lg sm:text-xl tracking-tight text-white">
+                  <span className="text-red-500">H</span>idzStreaming
+                </h2>
+                <BadgeCheck size={18} className="text-zinc-900 fill-[#60a5fa] shrink-0" />
+              </div>
+            </div>
+
+            {/* Tentang HidzStreaming */}
+            <div className="mb-6">
+              <h3 className="font-bold text-xs sm:text-sm uppercase tracking-wide text-amber-500 mb-2">Tentang HidzStreaming</h3>
+              <p className="text-zinc-300 text-sm sm:text-base leading-relaxed">
+                HidzStreaming adalah rumah digital untuk semua kebutuhan hiburanmu — mulai dari anime, donghua, komik, sampai novel ringan, semua dirangkum rapi dalam satu platform yang ringan dan mudah dipakai. Dibangun untuk komunitas pecinta budaya pop Asia, tanpa ribet daftar akun dan tanpa gangguan iklan berlebihan.
+              </p>
+            </div>
+
+            {/* Fitur Unggulan */}
+            <div>
+              <h3 className="font-bold text-xs sm:text-sm uppercase tracking-wide text-amber-500 mb-3">Fitur Unggulan</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="flex items-start gap-3 bg-zinc-950/40 border border-zinc-800/80 rounded-xl p-3">
+                  <div className="w-9 h-9 rounded-lg bg-amber-500/15 flex items-center justify-center text-amber-400 shrink-0"><Zap size={18} /></div>
+                  <div>
+                    <p className="text-white font-bold text-xs sm:text-sm">Akses Instan</p>
+                    <p className="text-zinc-500 text-[11px] sm:text-xs mt-0.5">Langsung nonton &amp; baca tanpa perlu daftar akun.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 bg-zinc-950/40 border border-zinc-800/80 rounded-xl p-3">
+                  <div className="w-9 h-9 rounded-lg bg-indigo-500/15 flex items-center justify-center text-indigo-400 shrink-0"><Layers size={18} /></div>
+                  <div>
+                    <p className="text-white font-bold text-xs sm:text-sm">Semua dalam Satu</p>
+                    <p className="text-zinc-500 text-[11px] sm:text-xs mt-0.5">Anime, donghua, komik, dan novel dalam satu genggaman.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 bg-zinc-950/40 border border-zinc-800/80 rounded-xl p-3">
+                  <div className="w-9 h-9 rounded-lg bg-emerald-500/15 flex items-center justify-center text-emerald-400 shrink-0"><Shield size={18} /></div>
+                  <div>
+                    <p className="text-white font-bold text-xs sm:text-sm">Bebas Gangguan</p>
+                    <p className="text-zinc-500 text-[11px] sm:text-xs mt-0.5">Tampilan bersih dan minim iklan biar makin fokus.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 bg-zinc-950/40 border border-zinc-800/80 rounded-xl p-3">
+                  <div className="w-9 h-9 rounded-lg bg-pink-500/15 flex items-center justify-center text-pink-400 shrink-0"><Sparkles size={18} /></div>
+                  <div>
+                    <p className="text-white font-bold text-xs sm:text-sm">Selalu Update</p>
+                    <p className="text-zinc-500 text-[11px] sm:text-xs mt-0.5">Koleksi diperbarui berkala biar gak ketinggalan rilisan baru.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
         </div>
       </div>
 
