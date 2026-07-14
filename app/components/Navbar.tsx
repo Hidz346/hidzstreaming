@@ -47,7 +47,7 @@ export default function Navbar() {
 
   return (
     <>
-      <nav id="navbar" className="fixed top-0 left-0 right-0 z-50 bg-zinc-100/90 dark:bg-zinc-900/90 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 shadow-sm">
+      <nav id="navbar" className="fixed top-0 left-0 right-0 z-50 bg-zinc-100/95 dark:bg-zinc-900/95 border-b border-zinc-200 dark:border-zinc-800 shadow-sm">
         <div className="container mx-auto px-4 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <Link href="/" className="flex items-center font-sans text-2xl font-bold hover:scale-105 transition-transform drop-shadow-md">
