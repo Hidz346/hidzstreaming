@@ -66,22 +66,24 @@ export default function HomePage() {
           TENTANG HIDZSTREAMING
          ═══════════════════════════════════════════════════ */}
       <div className="px-4 sm:px-6 lg:px-8 mt-6 lg:mt-8">
-        <div className="relative overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900">
+        <div className="rounded-3xl border border-zinc-800 bg-zinc-900">
 
-          {/* Background logo, full bleed (CSS background-image, bukan <img> + opacity, supaya tidak memicu glitch compositing GPU di sebagian Android) */}
-          <div
-            className="absolute inset-0 bg-cover bg-center pointer-events-none"
-            style={{ backgroundImage: "url('https://www.gobox.my.id/file/rRgIMPaNAtLj.png')" }}
-            aria-hidden="true"
-          ></div>
-          <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/75 via-zinc-950/92 to-zinc-950 pointer-events-none"></div>
+          {/* Banner: tinggi tetap & clipping-nya sendiri (bukan lapisan absolute yang membentang di sepanjang card yang tinggi), supaya tidak memicu bug duplikat/ghosting render saat scroll di sebagian Android */}
+          <div className="relative h-32 sm:h-40 w-full overflow-hidden rounded-t-3xl">
+            <div
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ backgroundImage: "url('https://www.gobox.my.id/file/rRgIMPaNAtLj.png')" }}
+              aria-hidden="true"
+            ></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/40 to-transparent"></div>
+          </div>
 
-          {/* Content */}
-          <div className="relative z-10 p-5 sm:p-7 lg:p-8">
+          {/* Content (alur dokumen normal, tanpa layer absolute/z-index tambahan) */}
+          <div className="px-5 sm:px-7 lg:px-8 pb-6 sm:pb-8">
 
             {/* Brand */}
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-11 h-11 rounded-full overflow-hidden border-2 border-zinc-700 shrink-0 bg-zinc-800">
+            <div className="-mt-9 sm:-mt-11 flex items-center gap-3 mb-5">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-4 border-zinc-900 shrink-0 bg-zinc-800 shadow-xl">
                 <img
                   src="https://www.gobox.my.id/file/rRgIMPaNAtLj.png"
                   alt="HidzStreaming"
@@ -89,7 +91,7 @@ export default function HomePage() {
                   onError={(e) => { e.currentTarget.src = '/logo.png'; }}
                 />
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 mt-6 sm:mt-8">
                 <h2 className="font-extrabold text-lg sm:text-xl tracking-tight text-white">
                   <span className="text-red-500">H</span>idzStreaming
                 </h2>
@@ -190,3 +192,4 @@ export default function HomePage() {
     </div>
   );
 }
+
