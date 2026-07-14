@@ -51,7 +51,7 @@ export default function MobileNav() {
   }
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl border-t border-zinc-200 dark:border-zinc-800 z-[60] pb-safe">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/98 dark:bg-zinc-950/98 border-t border-zinc-200 dark:border-zinc-800 z-[60] pb-safe">
       <div className="flex items-center justify-between w-full h-16 px-2">
         {links.map(({ href, icon: Icon, label }) => {
           const isActive = pathname === href || (href !== '/' && pathname?.startsWith(href) && href !== '/');
