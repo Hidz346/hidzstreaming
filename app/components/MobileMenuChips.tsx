@@ -27,15 +27,15 @@ export default function MobileMenuChips() {
         {menuLinks.map((link) => {
           const isActive = pathname === link.href || pathname.startsWith(link.href + '/');
           return (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-semibold transition-colors border ${
-                isActive
-                  ? 'bg-amber-600 text-white border-amber-600'
-                  : 'bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 hover:border-amber-400 dark:hover:border-amber-700'
-              }`}
-            >
+            <Link 
+ key={link.href} 
+ href={link.href}
+ className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-semibold transition-colors border ${
+ isActive 
+ ? 'bg-amber-600 text-white border-amber-600 -600/20' 
+ : 'bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 hover:border-amber-400 dark:hover:border-amber-700'
+ }`}
+ >
               {link.label}
             </Link>
           );
@@ -44,3 +44,4 @@ export default function MobileMenuChips() {
     </div>
   );
 }
+
