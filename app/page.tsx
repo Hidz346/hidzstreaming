@@ -68,17 +68,13 @@ export default function HomePage() {
       <div className="px-4 sm:px-6 lg:px-8 mt-6 lg:mt-8">
         <div className="relative overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900">
 
-          {/* Background logo, full bleed */}
-          <div className="absolute inset-0">
-            <img
-              src="https://www.gobox.my.id/file/rRgIMPaNAtLj.png"
-              alt=""
-              aria-hidden="true"
-              className="w-full h-full object-cover opacity-20"
-              onError={(e) => { e.currentTarget.style.display = 'none'; }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/30 via-zinc-950/85 to-zinc-950"></div>
-          </div>
+          {/* Background logo, full bleed (CSS background-image, bukan <img> + opacity, supaya tidak memicu glitch compositing GPU di sebagian Android) */}
+          <div
+            className="absolute inset-0 bg-cover bg-center pointer-events-none"
+            style={{ backgroundImage: "url('https://www.gobox.my.id/file/rRgIMPaNAtLj.png')" }}
+            aria-hidden="true"
+          ></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/75 via-zinc-950/92 to-zinc-950 pointer-events-none"></div>
 
           {/* Content */}
           <div className="relative z-10 p-5 sm:p-7 lg:p-8">
