@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Flame, Compass, BookOpen, Tv, X, ArrowRight, BadgeCheck, Zap, Layers, Shield, Sparkles } from 'lucide-react';
+import { Flame, Compass, BookOpen, Tv, X, ArrowRight } from 'lucide-react';
 
 export default function HomePage() {
   const [showPopup, setShowPopup] = useState(false);
@@ -24,126 +24,51 @@ export default function HomePage() {
   };
 
   return (
-    <div className="w-full bg-[#09090b] pb-20 overflow-x-hidden font-sans">
+    <div className="h-full w-full bg-[#09090b] overflow-hidden font-sans flex flex-col px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 lg:pt-8 pb-20 md:pb-6 lg:pb-8">
 
       {/* ═══════════════════════════════════════════════════
-          QUICK HUB NAVIGATION
+          QUICK HUB NAVIGATION (mengisi penuh halaman Home)
          ═══════════════════════════════════════════════════ */}
-      <div className="px-4 sm:px-6 lg:px-8 mt-6 lg:mt-8">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 lg:gap-4">
-          <Link href="/anime" className="relative overflow-hidden group bg-gradient-to-br from-indigo-900/30 to-indigo-950/20 border border-indigo-500/15 p-3 lg:p-4 rounded-2xl flex items-center gap-3 hover:border-indigo-500/40 hover:bg-indigo-900/40 transition-all duration-300">
-            <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl bg-indigo-500/15 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform"><Tv size={20} /></div>
-            <div>
-              <h3 className="text-white font-bold text-xs sm:text-sm">Anime Hub</h3>
-              <p className="text-zinc-500 text-[10px] sm:text-xs mt-0.5">Sub Indo</p>
-            </div>
-          </Link>
-          <Link href="/donghua" className="relative overflow-hidden group bg-gradient-to-br from-amber-900/30 to-amber-950/20 border border-amber-500/15 p-3 lg:p-4 rounded-2xl flex items-center gap-3 hover:border-amber-500/40 hover:bg-amber-900/40 transition-all duration-300">
-            <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl bg-amber-500/15 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform"><Flame size={20} /></div>
-            <div>
-              <h3 className="text-white font-bold text-xs sm:text-sm">Donghua Hub</h3>
-              <p className="text-zinc-500 text-[10px] sm:text-xs mt-0.5">Animasi China</p>
-            </div>
-          </Link>
-          <Link href="/comic" className="relative overflow-hidden group bg-gradient-to-br from-emerald-900/30 to-emerald-950/20 border border-emerald-500/15 p-3 lg:p-4 rounded-2xl flex items-center gap-3 hover:border-emerald-500/40 hover:bg-emerald-900/40 transition-all duration-300">
-            <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform"><Compass size={20} /></div>
-            <div>
-              <h3 className="text-white font-bold text-xs sm:text-sm">Komik Hub</h3>
-              <p className="text-zinc-500 text-[10px] sm:text-xs mt-0.5">Manga & Manhwa</p>
-            </div>
-          </Link>
-          <Link href="/novel" className="relative overflow-hidden group bg-gradient-to-br from-pink-900/30 to-pink-950/20 border border-pink-500/15 p-3 lg:p-4 rounded-2xl flex items-center gap-3 hover:border-pink-500/40 hover:bg-pink-900/40 transition-all duration-300">
-            <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl bg-pink-500/15 flex items-center justify-center text-pink-400 group-hover:scale-110 transition-transform"><BookOpen size={20} /></div>
-            <div>
-              <h3 className="text-white font-bold text-xs sm:text-sm">Novel Hub</h3>
-              <p className="text-zinc-500 text-[10px] sm:text-xs mt-0.5">Light Novel</p>
-            </div>
-          </Link>
-        </div>
-      </div>
-
-      {/* ═══════════════════════════════════════════════════
-          TENTANG HIDZSTREAMING
-         ═══════════════════════════════════════════════════ */}
-      <div className="px-4 sm:px-6 lg:px-8 mt-6 lg:mt-8">
-        <div className="rounded-3xl border border-zinc-800 bg-zinc-900">
-
-          {/* Banner: tinggi tetap & clipping-nya sendiri (bukan lapisan absolute yang membentang di sepanjang card yang tinggi), supaya tidak memicu bug duplikat/ghosting render saat scroll di sebagian Android */}
-          <div className="relative h-32 sm:h-40 w-full overflow-hidden rounded-t-3xl">
-            <div
-              className="absolute inset-0 bg-cover bg-center"
-              style={{ backgroundImage: "url('https://www.gobox.my.id/file/rRgIMPaNAtLj.png')" }}
-              aria-hidden="true"
-            ></div>
-            <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/40 to-transparent"></div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 grid-rows-2 sm:grid-rows-1 gap-3 sm:gap-4 lg:gap-6 flex-1 min-h-0 w-full">
+        <Link href="/anime" className="group relative overflow-hidden bg-gradient-to-br from-indigo-900/30 to-indigo-950/20 border border-indigo-500/15 rounded-2xl lg:rounded-3xl p-4 h-full flex flex-col items-center justify-center gap-2 sm:gap-3 lg:gap-4 hover:border-indigo-500/40 hover:bg-indigo-900/40 transition-all duration-300">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-2xl bg-indigo-500/15 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform">
+            <Tv className="w-6 h-6 sm:w-7 sm:h-7 lg:w-9 lg:h-9" />
           </div>
-
-          {/* Content (alur dokumen normal, tanpa layer absolute/z-index tambahan) */}
-          <div className="px-5 sm:px-7 lg:px-8 pb-6 sm:pb-8">
-
-            {/* Brand */}
-            <div className="-mt-9 sm:-mt-11 flex items-center gap-3 mb-5">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-4 border-zinc-900 shrink-0 bg-zinc-800 shadow-xl">
-                <img
-                  src="https://www.gobox.my.id/file/rRgIMPaNAtLj.png"
-                  alt="HidzStreaming"
-                  className="w-full h-full object-cover"
-                  onError={(e) => { e.currentTarget.src = '/logo.png'; }}
-                />
-              </div>
-              <div className="flex items-center gap-1.5 mt-6 sm:mt-8">
-                <h2 className="font-extrabold text-lg sm:text-xl tracking-tight text-white">
-                  <span className="text-red-500">H</span>idzStreaming
-                </h2>
-                <BadgeCheck size={18} className="text-zinc-900 fill-[#60a5fa] shrink-0" />
-              </div>
-            </div>
-
-            {/* Tentang HidzStreaming */}
-            <div className="mb-6">
-              <h3 className="font-bold text-xs sm:text-sm uppercase tracking-wide text-amber-500 mb-2">Tentang HidzStreaming</h3>
-              <p className="text-zinc-300 text-sm sm:text-base leading-relaxed">
-                HidzStreaming adalah rumah digital untuk semua kebutuhan hiburanmu — mulai dari anime, donghua, komik, sampai novel ringan, semua dirangkum rapi dalam satu platform yang ringan dan mudah dipakai. Dibangun untuk komunitas pecinta budaya pop Asia, tanpa ribet daftar akun dan tanpa gangguan iklan berlebihan.
-              </p>
-            </div>
-
-            {/* Fitur Unggulan */}
-            <div>
-              <h3 className="font-bold text-xs sm:text-sm uppercase tracking-wide text-amber-500 mb-3">Fitur Unggulan</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="flex items-start gap-3 bg-zinc-950/40 border border-zinc-800/80 rounded-xl p-3">
-                  <div className="w-9 h-9 rounded-lg bg-amber-500/15 flex items-center justify-center text-amber-400 shrink-0"><Zap size={18} /></div>
-                  <div>
-                    <p className="text-white font-bold text-xs sm:text-sm">Akses Instan</p>
-                    <p className="text-zinc-500 text-[11px] sm:text-xs mt-0.5">Langsung nonton &amp; baca tanpa perlu daftar akun.</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 bg-zinc-950/40 border border-zinc-800/80 rounded-xl p-3">
-                  <div className="w-9 h-9 rounded-lg bg-indigo-500/15 flex items-center justify-center text-indigo-400 shrink-0"><Layers size={18} /></div>
-                  <div>
-                    <p className="text-white font-bold text-xs sm:text-sm">Semua dalam Satu</p>
-                    <p className="text-zinc-500 text-[11px] sm:text-xs mt-0.5">Anime, donghua, komik, dan novel dalam satu genggaman.</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 bg-zinc-950/40 border border-zinc-800/80 rounded-xl p-3">
-                  <div className="w-9 h-9 rounded-lg bg-emerald-500/15 flex items-center justify-center text-emerald-400 shrink-0"><Shield size={18} /></div>
-                  <div>
-                    <p className="text-white font-bold text-xs sm:text-sm">Bebas Gangguan</p>
-                    <p className="text-zinc-500 text-[11px] sm:text-xs mt-0.5">Tampilan bersih dan minim iklan biar makin fokus.</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 bg-zinc-950/40 border border-zinc-800/80 rounded-xl p-3">
-                  <div className="w-9 h-9 rounded-lg bg-pink-500/15 flex items-center justify-center text-pink-400 shrink-0"><Sparkles size={18} /></div>
-                  <div>
-                    <p className="text-white font-bold text-xs sm:text-sm">Selalu Update</p>
-                    <p className="text-zinc-500 text-[11px] sm:text-xs mt-0.5">Koleksi diperbarui berkala biar gak ketinggalan rilisan baru.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
+          <div className="text-center">
+            <h3 className="text-white font-bold text-base sm:text-lg lg:text-xl">Anime Hub</h3>
+            <p className="text-zinc-500 text-xs sm:text-sm mt-1">Sub Indo</p>
           </div>
-        </div>
+        </Link>
+
+        <Link href="/donghua" className="group relative overflow-hidden bg-gradient-to-br from-amber-900/30 to-amber-950/20 border border-amber-500/15 rounded-2xl lg:rounded-3xl p-4 h-full flex flex-col items-center justify-center gap-2 sm:gap-3 lg:gap-4 hover:border-amber-500/40 hover:bg-amber-900/40 transition-all duration-300">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-2xl bg-amber-500/15 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
+            <Flame className="w-6 h-6 sm:w-7 sm:h-7 lg:w-9 lg:h-9" />
+          </div>
+          <div className="text-center">
+            <h3 className="text-white font-bold text-base sm:text-lg lg:text-xl">Donghua Hub</h3>
+            <p className="text-zinc-500 text-xs sm:text-sm mt-1">Animasi China</p>
+          </div>
+        </Link>
+
+        <Link href="/comic" className="group relative overflow-hidden bg-gradient-to-br from-emerald-900/30 to-emerald-950/20 border border-emerald-500/15 rounded-2xl lg:rounded-3xl p-4 h-full flex flex-col items-center justify-center gap-2 sm:gap-3 lg:gap-4 hover:border-emerald-500/40 hover:bg-emerald-900/40 transition-all duration-300">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-2xl bg-emerald-500/15 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
+            <Compass className="w-6 h-6 sm:w-7 sm:h-7 lg:w-9 lg:h-9" />
+          </div>
+          <div className="text-center">
+            <h3 className="text-white font-bold text-base sm:text-lg lg:text-xl">Komik Hub</h3>
+            <p className="text-zinc-500 text-xs sm:text-sm mt-1">Manga & Manhwa</p>
+          </div>
+        </Link>
+
+        <Link href="/novel" className="group relative overflow-hidden bg-gradient-to-br from-pink-900/30 to-pink-950/20 border border-pink-500/15 rounded-2xl lg:rounded-3xl p-4 h-full flex flex-col items-center justify-center gap-2 sm:gap-3 lg:gap-4 hover:border-pink-500/40 hover:bg-pink-900/40 transition-all duration-300">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-2xl bg-pink-500/15 flex items-center justify-center text-pink-400 group-hover:scale-110 transition-transform">
+            <BookOpen className="w-6 h-6 sm:w-7 sm:h-7 lg:w-9 lg:h-9" />
+          </div>
+          <div className="text-center">
+            <h3 className="text-white font-bold text-base sm:text-lg lg:text-xl">Novel Hub</h3>
+            <p className="text-zinc-500 text-xs sm:text-sm mt-1">Light Novel</p>
+          </div>
+        </Link>
       </div>
 
       {/* ═══════════════════════════════════════════════════
