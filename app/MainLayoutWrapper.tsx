@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import MobileMenuChips from './components/MobileMenuChips';
 import Navbar from './components/Navbar';
@@ -13,6 +14,14 @@ export default function MainLayoutWrapper({ children }: { children: React.ReactN
 
   const isHome = pathname === '/';
 
+  // Kunci scroll halaman penuh khusus di Home (tanpa mengganggu toggle scroll milik Navbar untuk menu mobile)
+  useEffect(() => {
+    document.documentElement.style.overflow = isHome ? 'hidden' : '';
+    return () => {
+      document.documentElement.style.overflow = '';
+    };
+  }, [isHome]);
+
   if (isComicRead || isNovelRead) {
     return <>{children}</>;
   }
@@ -20,7 +29,7 @@ export default function MainLayoutWrapper({ children }: { children: React.ReactN
   return (
     <>
       <Navbar />
-      <main className={`flex-1 w-full pt-[72px] sm:pt-[84px] flex flex-col relative max-w-[1600px] mx-auto px-4 md:px-8 ${isHome ? 'h-dvh overflow-hidden' : 'pb-12 min-h-[85vh]'}`}>
+      <main className={`w-full pt-[72px] sm:pt-[84px] flex flex-col relative max-w-[1600px] mx-auto px-4 md:px-8 ${isHome ? 'h-dvh overflow-hidden' : 'flex-1 pb-12 min-h-[85vh]'}`}>
         <div className={`flex flex-col lg:flex-row w-full gap-6 lg:gap-8 ${isHome ? 'flex-1 min-h-0' : ''}`}>
           {children}
         </div>
