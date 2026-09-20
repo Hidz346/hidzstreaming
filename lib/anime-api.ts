@@ -2,20 +2,15 @@
 const BASE_URL = "/api";
 
 const fetchAnimeApi = async (path: string) => {
-  try {
-    const res = await fetch(`${BASE_URL}${path}`, {
-      next: { revalidate: 600 },
-    });
-    
-    if (!res.ok) {
-        throw new Error(`API returned status: ${res.status}`);
-    }
-    const data = await res.json();
-    return data;
-  } catch (error) {
-    console.error("Anime fetchApi error", error);
-    throw error;
+  const res = await fetch(`${BASE_URL}${path}`, {
+    next: { revalidate: 600 },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Anime API returned status ${res.status}`);
   }
+
+  return res.json();
 };
 
 export const getAnimeHome = async (source: string = 'animasu') => {
