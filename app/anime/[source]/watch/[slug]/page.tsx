@@ -169,7 +169,7 @@ export default function AnimeWatchPage() {
 
         // If it's still a relative path, prefix the base URL
         if (resolvedUrl.startsWith('/')) {
-          resolvedUrl = `https://www.sankavollerei.com${resolvedUrl}`;
+          resolvedUrl = `${process.env.NEXT_PUBLIC_SANKA_API_URL || 'https://www.sankavollerei.web.id'}${resolvedUrl}`;
         }
 
         // Try to extract direct video source
@@ -192,7 +192,7 @@ export default function AnimeWatchPage() {
         if (rawServerUrl.startsWith('http')) {
           setActiveServer(rawServerUrl);
         } else {
-          setActiveServer(`/api/anime/iframe-proxy?url=${encodeURIComponent('https://www.sankavollerei.com' + rawServerUrl)}`);
+          setActiveServer(`/api/anime/iframe-proxy?url=${encodeURIComponent((process.env.NEXT_PUBLIC_SANKA_API_URL || 'https://www.sankavollerei.web.id') + rawServerUrl)}`);
         }
       }
     };
