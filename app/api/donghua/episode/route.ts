@@ -11,6 +11,10 @@ export async function GET(req: NextRequest) {
     const data = await getDonghuaEpisode(id);
     return NextResponse.json(data);
   } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch donghua episode" }, { status: 500 });
+    console.error("Donghua episode API error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch donghua episode" },
+      { status: 502 }
+    );
   }
 }
