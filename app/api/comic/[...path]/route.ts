@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from "next/server";
-import axios from "axios";
+import { fetchSankaJson } from "@/lib/sanka-api";
 
 export async function GET(
   request: NextRequest,
@@ -12,18 +12,13 @@ export async function GET(
     const { search } = new URL(request.url);
     const fullPath = `/comic/${apiPath}${search}`;
     
-    const BASE_URL = "https://www.sankavollerei.com";
-    
-    const res = await axios.get(`${BASE_URL}${fullPath}`, {
-      timeout: 15000,
-    });
-
-    return NextResponse.json(res.data);
+    const data = await fetchSankaJson(fullPath);
+    return NextResponse.json(data);
   } catch (error: any) {
     console.error("Comic API Proxy Error:", error.message);
     return NextResponse.json(
       { error: "Failed to fetch from Comic API" },
-      { status: error.response?.status || 500 }
+      { status: 502 }
     );
   }
 }
