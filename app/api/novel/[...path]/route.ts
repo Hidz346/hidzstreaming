@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import axios from 'axios';
+import { fetchSankaJson } from "@/lib/sanka-api";
 
-const BASE_URL = 'https://www.sankavollerei.com';
+
 
 export async function GET(
   request: Request,
@@ -13,20 +13,14 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const queryString = searchParams.toString();
     
-    const fullUrl = `${BASE_URL}/novel/${urlPath}${queryString ? `?${queryString}` : ''}`;
-    
-    console.log(`[Novel Proxy] Fetching: ${fullUrl}`);
-    
-    const response = await axios.get(fullUrl, {
-      timeout: 15000,
-    });
-
-    return NextResponse.json(response.data);
+    const data = await fetchSankaJson(`/novel/${urlPath}${queryString ? `?${queryString}` : ""}`);
+    return NextResponse.json(data);
   } catch (error: any) {
     console.error(`[Novel Proxy Error]`, error.message);
     return NextResponse.json(
       { error: 'Failed to fetch from external novel API' },
-      { status: error.response?.status || 500 }
+      { status: 502 }
     );
   }
 }
+
