@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     if (url.includes('komiku.org') || url.includes('komiku.id')) {
       referer = 'https://komiku.org/';
     } else if (url.includes('sankavollerei')) {
-      referer = 'https://www.sankavollerei.com/';
+      referer = 'https://www.sankavollerei.web.id/';
     } else if (url.includes('anichin')) {
       referer = 'https://anichin.vip/';
     } else if (url.includes('sakuranovel.id')) {
