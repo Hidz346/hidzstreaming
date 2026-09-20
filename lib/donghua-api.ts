@@ -1,23 +1,14 @@
-const BASE_URL = "https://www.sankavollerei.com/anime/donghua";
+import { fetchSankaJson } from "./sanka-api";
 
 const fetchDonghuaApi = async (path: string) => {
   try {
-    const res = await fetch(`${BASE_URL}${path}`, {
-      next: { revalidate: 600 },
-    });
-    
-    if (!res.ok) {
-        throw new Error(`API returned status: ${res.status}`);
+    const data = await fetchSankaJson(`/anime/donghua${path}`);
+    if (data?.status && data.status !== "success" && !Array.isArray(data) && !data.data && !data.latest_release) {
+      throw new Error("Invalid response from Donghua API");
     }
-    const data = await res.json();
-    
-    if (data.status !== "success" && !Array.isArray(data) && !data) {
-        throw new Error("Invalid response from Donghua API");
-    }
-    
     return data;
   } catch (error) {
-    console.error("Donghua fetchApi error", error);
+    console.error("Donghua API error", error);
     throw error;
   }
 };

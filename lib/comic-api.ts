@@ -1,18 +1,10 @@
-const BASE_URL = "https://www.sankavollerei.com";
+import { fetchSankaJson } from "./sanka-api";
 
 const fetchComicApi = async (path: string) => {
   try {
-    const res = await fetch(`${BASE_URL}${path}`, {
-      next: { revalidate: 600 },
-    });
-    
-    if (!res.ok) {
-        throw new Error(`API returned status: ${res.status}`);
-    }
-    const data = await res.json();
-    return data;
+    return await fetchSankaJson(path);
   } catch (error) {
-    console.error("Comic fetchApi error", error);
+    console.error("Comic API error", error);
     throw error;
   }
 };
