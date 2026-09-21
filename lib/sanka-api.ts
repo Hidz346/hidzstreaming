@@ -1,26 +1,29 @@
-const DEFAULT_BASE_URL = "https://www.sankavollerei.web.id";
+const DEFAULT_BASE_URL = "https://sankavollerei.web.id";
 
-const FALLBACK_BASE_URLS = [
+const REQUEST_TIMEOUT = 5000;
+const MAX_ATTEMPTS_PER_BASE = 1;
+
+const normalizeBaseUrl = (url: string) => url.replace(/\/$/, "");
+
+const configuredBases = [
+  process.env.SANKA_API_URL,
   process.env.SANKA_API_FALLBACK_URL,
   DEFAULT_BASE_URL,
-  "https://sankavollerei.web.id",
-  "https://www.sankavollerei.com",
+  "https://www.sankavollerei.web.id",
 ]
-  .filter(Boolean)
-  .map((url) => url!.replace(/\/$/, ""));
+  .filter((url): url is string => Boolean(url))
+  .map(normalizeBaseUrl);
 
-const PRIMARY_BASE_URL = (
+const BASE_URLS = Array.from(new Set(configuredBases));
+const PRIMARY_BASE_URL = normalizeBaseUrl(
   process.env.SANKA_API_URL || DEFAULT_BASE_URL
-).replace(/\/$/, "");
-
-const REQUEST_TIMEOUT = 15000;
-const MAX_ATTEMPTS_PER_BASE = 2;
+);
 
 const normalizePath = (path: string) =>
   path.startsWith("/") ? path : `/${path}`;
 
 const buildUrl = (base: string, path: string) =>
-  `${base.replace(/\/$/, "")}${normalizePath(path)}`;
+  `${normalizeBaseUrl(base)}${normalizePath(path)}`;
 
 const isRetryableStatus = (status: number) =>
   status === 408 ||
@@ -54,8 +57,6 @@ const getRequestHeaders = () => ({
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36",
 });
-
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function requestJson(url: string) {
   const response = await fetch(url, {
@@ -111,10 +112,9 @@ const shouldRetry = (error: unknown) => {
 };
 
 export async function fetchSankaJson(path: string) {
-  const bases = Array.from(new Set([PRIMARY_BASE_URL, ...FALLBACK_BASE_URLS]));
   let lastError: unknown;
 
-  for (const base of bases) {
+  for (const base of BASE_URLS) {
     const url = buildUrl(base, path);
 
     for (let attempt = 1; attempt <= MAX_ATTEMPTS_PER_BASE; attempt += 1) {
@@ -126,15 +126,21 @@ export async function fetchSankaJson(path: string) {
         if (!shouldRetry(error) || attempt === MAX_ATTEMPTS_PER_BASE) {
           break;
         }
-
-        await wait(400 * attempt);
       }
     }
   }
 
-  throw lastError instanceof Error
-    ? lastError
-    : new Error("Sanka API request failed");
+  const error =
+    lastError instanceof Error
+      ? lastError
+      : new Error("Sanka API request failed");
+
+  (error as Error & { code?: string; attemptedBases?: string[] }).code =
+    "SANKA_API_UNAVAILABLE";
+  (error as Error & { code?: string; attemptedBases?: string[] }).attemptedBases =
+    BASE_URLS;
+
+  throw error;
 }
 
 export function getSankaBaseUrl() {
