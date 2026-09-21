@@ -21,7 +21,7 @@ export default function AnimeList({ items }: { items: any[] }) {
           type: item.type || 'SERIES',
           year: item.year || '2025'
         };
-        const href = item.href || `/anime/otakudesu/detail/${item.animeId || item.id || item.slug || item.endpoint}`;
+        const href = item.href || `/anime/otakudesu/detail/${item.animeId || item.id || item.slug || item.endpoint || item.anime_slug}`;
 
         return (
           <AnimeCard3 
