@@ -12,7 +12,7 @@ import { getAnimeHome, getAnimePopular } from '@/lib/anime-api';
 
 export default function AnimeHomePage() {
   const params = useParams();
-  const source = (params?.source as string) || 'animasu';
+  const source = (params?.source as string) || 'otakudesu';
 
   const router = useRouter();
   const [homeData, setHomeData] = useState<any>(null);
@@ -28,8 +28,8 @@ export default function AnimeHomePage() {
           getAnimeHome(source),
           getAnimePopular(1, source).catch(() => null)
         ]);
-        setHomeData(homeRes?.data || homeRes?.home || homeRes);
-        setPopularData(popRes?.animes || popRes?.data || []);
+        setHomeData(homeRes?.data?.data || homeRes?.data || homeRes?.home || homeRes);
+        setPopularData(popRes?.data?.animes || popRes?.animes || popRes?.data?.data || popRes?.data || []);
       } catch (error) {
         console.error("Failed to fetch anime data", error);
       } finally {
