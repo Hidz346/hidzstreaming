@@ -46,6 +46,80 @@ const extractList = (response: AnimeResponse, keys: string[]) => {
   return [];
 };
 
+const firstString = (...values: unknown[]) =>
+  values.find((value) => typeof value === "string" && value.trim()) as
+    | string
+    | undefined;
+
+const getPathSlug = (value: string) => {
+  try {
+    const parsed = new URL(value, "https://local.invalid");
+    const parts = parsed.pathname.split("/").filter(Boolean);
+    return parts[parts.length - 1] || "";
+  } catch {
+    return value.split("/").filter(Boolean).pop() || value;
+  }
+};
+
+export const getAnimeIdentifier = (item: any) => {
+  const direct = firstString(
+    item?.anime_slug,
+    item?.slug,
+    item?.endpoint,
+    item?.animeId,
+    item?.id
+  );
+
+  if (direct) return getPathSlug(direct);
+
+  const href = firstString(item?.href, item?.url, item?.link);
+  return href ? getPathSlug(href) : "";
+};
+
+export const getAnimeDetailHref = (item: any, source: string = "otakudesu") => {
+  const identifier = getAnimeIdentifier(item);
+  return identifier
+    ? `/anime/${sourcePath(source)}/detail/${encodeURIComponent(identifier)}`
+    : "#";
+};
+
+export const unwrapAnimeDetail = (response: any) => {
+  const candidates = [
+    response?.detail,
+    response?.anime_detail,
+    response?.anime,
+    response?.data?.detail,
+    response?.data?.anime_detail,
+    response?.data?.anime,
+    response?.result?.detail,
+    response?.result?.anime_detail,
+    response?.result?.anime,
+    response?.data,
+    response?.result,
+    response,
+  ];
+
+  for (const candidate of candidates) {
+    if (
+      candidate &&
+      typeof candidate === "object" &&
+      !Array.isArray(candidate) &&
+      (
+        candidate.title ||
+        candidate.anime_name ||
+        candidate.name ||
+        candidate.episodeList ||
+        candidate.episode_list ||
+        candidate.episodes
+      )
+    ) {
+      return candidate;
+    }
+  }
+
+  return null;
+};
+
 export const getAnimeHome = async (source: string = "otakudesu") =>
   getHomeResponse(source);
 
