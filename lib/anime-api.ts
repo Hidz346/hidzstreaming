@@ -34,7 +34,11 @@ const extractList = (response: AnimeResponse, keys: string[]) => {
 
   const data = response?.data;
   if (Array.isArray(data)) return data;
+
   if (data && typeof data === "object") {
+    if (Array.isArray(data.data)) return data.data;
+    if (Array.isArray(data.animeList)) return data.animeList;
+
     for (const key of keys) {
       const value = data[key];
       if (Array.isArray(value)) return value;
@@ -42,6 +46,13 @@ const extractList = (response: AnimeResponse, keys: string[]) => {
         return value.animeList;
       }
     }
+  }
+
+  const result = response?.result;
+  if (Array.isArray(result)) return result;
+  if (result && typeof result === "object") {
+    if (Array.isArray(result.data)) return result.data;
+    if (Array.isArray(result.animeList)) return result.animeList;
   }
 
   return [];
@@ -73,7 +84,7 @@ export const getAnimeIdentifier = (item: any) => {
 
   if (direct) return getPathSlug(direct);
 
-  const href = firstString(item?.href, item?.url, item?.link);
+  const href = firstString(item?.href, item?.url, item?.link, item?.otakudesu_url);
   return href ? getPathSlug(href) : "";
 };
 
@@ -92,11 +103,12 @@ export const unwrapAnimeDetail = (response: any) => {
     response?.data?.detail,
     response?.data?.anime_detail,
     response?.data?.anime,
+    response?.data,
     response?.result?.detail,
     response?.result?.anime_detail,
     response?.result?.anime,
-    response?.data,
     response?.result,
+    response?.data?.data,
     response,
   ];
 
@@ -111,6 +123,7 @@ export const unwrapAnimeDetail = (response: any) => {
         candidate.name ||
         candidate.episodeList ||
         candidate.episode_list ||
+        candidate.episode_lists ||
         candidate.episodes
       )
     ) {
@@ -143,8 +156,19 @@ export const getAnimeCompleted = async (
   source: string = "otakudesu"
 ) => {
   const response = await getHomeResponse(source);
-  const completed = extractList(response, ["completed", "complete", "latestCompleted"]);
-  return { ...response, data: completed, animes: completed, animeList: completed, page };
+  const completed = extractList(response, [
+    "completed",
+    "complete",
+    "latestCompleted",
+    "complete_anime",
+  ]);
+  return {
+    ...response,
+    data: completed,
+    animes: completed,
+    animeList: completed,
+    page,
+  };
 };
 
 export const getAnimeOngoing = async (
@@ -152,8 +176,20 @@ export const getAnimeOngoing = async (
   source: string = "otakudesu"
 ) => {
   const response = await getHomeResponse(source);
-  const ongoing = extractList(response, ["ongoing", "on_going", "latest", "animeList"]);
-  return { ...response, data: ongoing, animes: ongoing, animeList: ongoing, page };
+  const ongoing = extractList(response, [
+    "ongoing",
+    "on_going",
+    "latest",
+    "animeList",
+    "ongoing_anime",
+  ]);
+  return {
+    ...response,
+    data: ongoing,
+    animes: ongoing,
+    animeList: ongoing,
+    page,
+  };
 };
 
 export const getAnimeGenres = async (source: string = "otakudesu") =>
@@ -199,8 +235,21 @@ export const getAnimePopular = async (
   source: string = "otakudesu"
 ) => {
   const response = await getHomeResponse(source);
-  const popular = extractList(response, ["popular", "mostPopular", "trending", "animeList", "ongoing", "latest"]);
-  return { ...response, data: { ...(response?.data || {}), animes: popular }, animes: popular, page };
+  const popular = extractList(response, [
+    "popular",
+    "mostPopular",
+    "trending",
+    "animeList",
+    "ongoing",
+    "latest",
+    "ongoing_anime",
+  ]);
+  return {
+    ...response,
+    data: { ...(response?.data || {}), animes: popular },
+    animes: popular,
+    page,
+  };
 };
 
 export const getAnimeLatest = async (
