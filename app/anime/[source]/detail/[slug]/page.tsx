@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Search, Eye, Heart, Film, Calendar, Building2, Play, Bookmark, List, Copy, SortDesc, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
-import { getAnimeDetail, getAnimeOngoing } from '@/lib/anime-api';
+import { getAnimeDetail, getAnimeOngoing, unwrapAnimeDetail, getAnimeDetailHref, getAnimeIdentifier } from '@/lib/anime-api';
 import Sidebar from '../../../../components/Sidebar';
 
 export default function AnimeDetailPage() {
@@ -25,12 +25,26 @@ export default function AnimeDetailPage() {
 
   useEffect(() => {
     if (!slug) return;
+
     const fetchDetail = async () => {
+      setLoading(true);
+
       try {
         const res = await getAnimeDetail(slug, source);
-        setDetail(res?.detail || res?.data || res?.anime_detail || res);
+        const normalized = unwrapAnimeDetail(res);
+
+        if (!normalized) {
+          console.error('Failed to normalize anime detail response', {
+            source,
+            slug,
+            response: res,
+          });
+        }
+
+        setDetail(normalized);
       } catch (error) {
-        console.error("Failed to fetch anime detail", error);
+        console.error('Failed to fetch anime detail', { source, slug, error });
+        setDetail(null);
       } finally {
         setLoading(false);
       }
@@ -39,16 +53,23 @@ export default function AnimeDetailPage() {
     const fetchRek = async () => {
       try {
         const res = await getAnimeOngoing(1, source);
-        const items = res?.animeList || res?.data || res || [];
-        const arr = Array.isArray(items) ? items : [];
-        const randoms = [...arr].sort(() => 0.5 - Math.random()).slice(0, 4);
+        const items = Array.isArray(res?.animeList)
+          ? res.animeList
+          : Array.isArray(res?.animes)
+            ? res.animes
+            : Array.isArray(res?.data)
+              ? res.data
+              : [];
+        const randoms = [...items].sort(() => 0.5 - Math.random()).slice(0, 4);
         setRekomendasi(randoms);
-      } catch (e) { }
+      } catch (e) {
+        setRekomendasi([]);
+      }
     };
 
     fetchDetail();
     fetchRek();
-  }, [slug]);
+  }, [slug, source]);
 
   if (loading) {
     return (
@@ -68,11 +89,13 @@ export default function AnimeDetailPage() {
   }
 
   let episodes = detail.episodeList || detail.episode_list || detail.episodes || [];
+  if (!Array.isArray(episodes) && episodes && typeof episodes === 'object') {
+    episodes = episodes.animeList || episodes.episodes || episodes.data || [];
+  }
   
-  // Sorting episodes
-  const displayedEpisodes = [...episodes].reverse(); // default is from latest, let's reverse if requested
+  const displayedEpisodes = [...episodes].reverse();
   if (epsSortAsc) {
-    displayedEpisodes.reverse(); 
+    displayedEpisodes.reverse();
   }
   
   const filteredEpisodes = displayedEpisodes.filter((ep: any) => 
@@ -96,12 +119,10 @@ export default function AnimeDetailPage() {
     <>
     <div className="flex-1 min-w-0 bg-[#0f0f13]">
     <div className="min-h-screen pb-24 font-sans text-white">
-      
-      {/* HEADER BANNER - Blurred Background */}
       <div className="relative w-full h-[240px] sm:h-[300px] md:h-[350px] overflow-hidden">
         <div className="absolute inset-0 bg-black">
           <img 
-            src={`/api/image-proxy?url=${encodeURIComponent(detail.poster || detail.thumb)}`} 
+            src={`/api/image-proxy?url=${encodeURIComponent(detail.poster || detail.thumb || detail.thumbnail || detail.image || '')}`} 
             alt="background" 
             className="w-full h-full object-cover opacity-50 blur-md scale-105"
           />
@@ -111,29 +132,23 @@ export default function AnimeDetailPage() {
       </div>
 
       <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 relative -mt-32 sm:-mt-40 flex flex-col items-center">
-        
-        {/* POSTER */}
         <div className="w-36 sm:w-48 aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.8)] border border-white/10 mb-5 sm:mb-6">
           <img 
-            src={`/api/image-proxy?url=${encodeURIComponent(detail.poster || detail.thumb)}`} 
-            alt={detail.title} 
+            src={`/api/image-proxy?url=${encodeURIComponent(detail.poster || detail.thumb || detail.thumbnail || detail.image || '')}`} 
+            alt={detail.title || detail.anime_name || detail.name || 'Anime'} 
             className="w-full h-full object-cover"
           />
         </div>
 
-        {/* TITLES */}
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-center text-white mb-2 leading-tight drop-shadow-md">
-          {detail.title}
+          {detail.title || detail.anime_name || detail.name || 'Untitled'}
         </h1>
         <p className="text-sm italic text-zinc-400 text-center mb-6">
-          {detail.japanese || detail.title}
+          {detail.japanese || detail.title || detail.anime_name || detail.name || ''}
         </p>
 
-        {/* BADGES */}
         <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-8">
-          <span className={`px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold ${
-            (typeof detail.status === 'string' && detail.status?.toLowerCase() === 'ongoing') ? 'bg-[#00d285] text-white' : 'bg-sky-500 text-white'
-          }`}>
+          <span className="px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold bg-sky-500 text-white">
             {typeof detail.status === 'object' ? (detail.status?.name || 'Ongoing') : (detail.status || 'Ongoing')}
           </span>
           <span className="bg-[#1C1D2A] border border-zinc-700/50 text-zinc-300 text-xs sm:text-sm font-bold px-4 py-1.5 rounded-full flex items-center gap-1.5">
@@ -144,33 +159,16 @@ export default function AnimeDetailPage() {
           </span>
         </div>
 
-        {/* METADATA LIST */}
         <div className="w-full max-w-2xl bg-transparent border-t border-b border-zinc-800/60 py-4 mb-6">
           <div className="flex flex-col gap-3 sm:gap-4 text-xs sm:text-sm">
-            <div className="flex justify-between items-center">
-              <span className="text-zinc-500 font-medium">Studio</span>
-              <span className="text-white font-bold text-right">{typeof detail.studio === 'object' ? detail.studio?.name : (detail.studio || '-')}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-zinc-500 font-medium">Season</span>
-              <span className="text-white font-bold text-right">{typeof detail.season === 'object' ? detail.season?.name : (detail.season || detail.year || '-')}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-zinc-500 font-medium">Total Eps</span>
-              <span className="text-white font-bold text-right">{typeof detail.episodes === 'object' ? detail.episodes?.name : (detail.episodes || detail.episode || '-')}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-zinc-500 font-medium">Released</span>
-              <span className="text-white font-bold text-right">{typeof detail.release_date === 'object' ? detail.release_date?.name : (detail.release_date || detail.aired || '-')}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-zinc-500 font-medium">Duration</span>
-              <span className="text-white font-bold text-right">{typeof detail.duration === 'object' ? detail.duration?.name : (detail.duration || detail.time || '-')}</span>
-            </div>
+            <div className="flex justify-between items-center"><span className="text-zinc-500 font-medium">Studio</span><span className="text-white font-bold text-right">{typeof detail.studio === 'object' ? detail.studio?.name : (detail.studio || '-')}</span></div>
+            <div className="flex justify-between items-center"><span className="text-zinc-500 font-medium">Season</span><span className="text-white font-bold text-right">{typeof detail.season === 'object' ? detail.season?.name : (detail.season || detail.year || '-')}</span></div>
+            <div className="flex justify-between items-center"><span className="text-zinc-500 font-medium">Total Eps</span><span className="text-white font-bold text-right">{typeof detail.episodes === 'object' ? (detail.episodes?.name || detail.episodes?.count || '-') : (detail.episodes || detail.episode || '-')}</span></div>
+            <div className="flex justify-between items-center"><span className="text-zinc-500 font-medium">Released</span><span className="text-white font-bold text-right">{typeof detail.release_date === 'object' ? detail.release_date?.name : (detail.release_date || detail.aired || '-')}</span></div>
+            <div className="flex justify-between items-center"><span className="text-zinc-500 font-medium">Duration</span><span className="text-white font-bold text-right">{typeof detail.duration === 'object' ? detail.duration?.name : (detail.duration || detail.time || '-')}</span></div>
           </div>
         </div>
 
-        {/* GENRES */}
         <div className="flex flex-wrap justify-center items-center gap-2 mb-8 max-w-2xl">
           <span className="text-rose-500 mr-1"><Bookmark size={14} className="fill-current" /></span>
           {(detail.genre_list || detail.genres || []).map((g: any, i: number) => (
@@ -180,9 +178,8 @@ export default function AnimeDetailPage() {
           ))}
         </div>
 
-        {/* ACTION BUTTONS */}
         <div className="w-full max-w-2xl flex flex-row gap-2 sm:gap-3 mb-10">
-          <Link href={episodes.length > 0 ? `/anime/${source}/watch/${episodes[episodes.length - 1]?.episodeId || episodes[episodes.length - 1]?.slug}` : '#'} className="flex-[2] sm:flex-[3] bg-[#f40f25] hover:bg-[#d60a1e] text-white font-extrabold px-2 sm:px-5 py-3 sm:py-3.5 rounded-xl flex items-center justify-center gap-2 transition-colors text-[13px] sm:text-sm">
+          <Link href={episodes.length > 0 ? `/anime/${source}/watch/${getAnimeIdentifier(episodes[episodes.length - 1])}?detail_slug=${encodeURIComponent(slug)}` : '#'} className="flex-[2] sm:flex-[3] bg-[#f40f25] hover:bg-[#d60a1e] text-white font-extrabold px-2 sm:px-5 py-3 sm:py-3.5 rounded-xl flex items-center justify-center gap-2 transition-colors text-[13px] sm:text-sm">
             <Play size={16} className="fill-current" /> Tonton
           </Link>
           <button onClick={() => { navigator.clipboard.writeText(window.location.href); alert('Link dicopy!'); }} className="flex-[1.5] sm:flex-[2] bg-[#1C1D2A] hover:bg-[#2b2c3d] border border-zinc-800/50 text-zinc-300 font-bold px-2 sm:px-5 py-3 sm:py-3.5 rounded-xl flex items-center justify-center gap-2 transition-colors text-[13px] sm:text-sm">
@@ -190,14 +187,9 @@ export default function AnimeDetailPage() {
           </button>
         </div>
 
-        {/* BOTTOM CONTENT AREA */}
         <div className="w-full max-w-4xl flex flex-col gap-8">
-          
-          {/* SYNOPSIS */}
           <div className="w-full bg-[#1C1D2A] p-5 sm:p-6 rounded-2xl border border-zinc-800/50">
-            <h3 className="text-base sm:text-lg font-black text-white mb-4">
-              Sinopsis
-            </h3>
+            <h3 className="text-base sm:text-lg font-black text-white mb-4">Sinopsis</h3>
             <div className="text-zinc-400 text-[13px] sm:text-sm leading-relaxed mb-3 text-left space-y-3 whitespace-pre-wrap">
               {showFullSynopsis ? synopsisText : synopsisText.slice(0, 250) + (isSynopsisLong ? '...' : '')}
             </div>
@@ -208,98 +200,69 @@ export default function AnimeDetailPage() {
             )}
           </div>
 
-        {/* EPISODE LIST */}
-        <div className="w-full bg-[#1C1D2A] p-5 sm:p-6 rounded-2xl border border-zinc-800/50">
-          <h3 className="text-xl font-bold text-white mb-5 flex items-center gap-2 justify-center sm:justify-start">
-            <List size={20} className="text-[#f40f25]" /> Daftar Episode
-          </h3>
-          
-          <div className="flex flex-wrap sm:flex-nowrap gap-2 mb-4">
-            <div className="relative flex-1 min-w-[200px]">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-              <input 
-                type="text" 
-                placeholder={`Cari eps (1-${episodes.length})`}
-                value={epsQuery}
-                onChange={(e) => { setEpsQuery(e.target.value); setEpsPage(1); }}
-                className="w-full bg-[#1C1D2A] border border-zinc-800 text-white text-sm rounded-lg pl-9 pr-16 py-2 focus:outline-none focus:border-zinc-600"
-              />
-              <button className="absolute right-1 top-1 bottom-1 px-3 bg-[#2A2B3D] text-xs font-bold rounded-lg text-[#f40f25] hover:bg-[#3b3c54]">Cari</button>
+          <div className="w-full bg-[#1C1D2A] p-5 sm:p-6 rounded-2xl border border-zinc-800/50">
+            <h3 className="text-xl font-bold text-white mb-5 flex items-center gap-2 justify-center sm:justify-start">
+              <List size={20} className="text-[#f40f25]" /> Daftar Episode
+            </h3>
+            
+            <div className="flex flex-wrap sm:flex-nowrap gap-2 mb-4">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+                <input type="text" placeholder={`Cari eps (1-${episodes.length})`} value={epsQuery} onChange={(e) => { setEpsQuery(e.target.value); setEpsPage(1); }} className="w-full bg-[#1C1D2A] border border-zinc-800 text-white text-sm rounded-lg pl-9 pr-16 py-2 focus:outline-none focus:border-zinc-600" />
+                <button className="absolute right-1 top-1 bottom-1 px-3 bg-[#2A2B3D] text-xs font-bold rounded-lg text-[#f40f25] hover:bg-[#3b3c54]">Cari</button>
+              </div>
+              <button onClick={() => setEpsSortAsc(!epsSortAsc)} className="bg-[#2A2B3D] hover:bg-[#3b3c54] border border-zinc-800 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors flex items-center gap-2 shrink-0">Urutan: {epsSortAsc ? '1 -> 99' : '99 -> 1'}</button>
+              <button className="bg-[#2A2B3D] hover:bg-[#3b3c54] border border-zinc-800 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors flex items-center gap-2 shrink-0"><Copy size={14} /> Salin</button>
             </div>
-            <button onClick={() => setEpsSortAsc(!epsSortAsc)} className="bg-[#2A2B3D] hover:bg-[#3b3c54] border border-zinc-800 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors flex items-center gap-2 shrink-0">
-              Urutan: {epsSortAsc ? '1 -> 99' : '99 -> 1'}
-            </button>
-            <button className="bg-[#2A2B3D] hover:bg-[#3b3c54] border border-zinc-800 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors flex items-center gap-2 shrink-0">
-              <Copy size={14} /> Salin
-            </button>
+
+            {totalEpsPages > 1 && (
+              <div className="flex items-center justify-between bg-[#1C1D2A] border border-zinc-800/60 rounded-xl p-3 mb-4">
+                <button onClick={() => setEpsPage(p => Math.max(1, p - 1))} disabled={epsPage === 1} className="text-zinc-400 hover:text-white p-2 disabled:opacity-50"><ChevronLeft size={18} /></button>
+                <div className="flex flex-col items-center"><span className="text-zinc-300 text-xs font-bold">Page <span className="text-[#f40f25]">{epsPage}</span></span><span className="text-zinc-500 text-[10px]">Eps {startEps} - {endEps}</span></div>
+                <button onClick={() => setEpsPage(p => Math.min(totalEpsPages, p + 1))} disabled={epsPage === totalEpsPages} className="text-zinc-400 hover:text-white p-2 disabled:opacity-50"><ChevronRight size={18} /></button>
+              </div>
+            )}
+
+            <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-2 sm:gap-3">
+              {paginatedEpisodes.map((ep: any, i: number) => {
+                const titleStr = String(ep.title || ep.name || ep.episode || '');
+                let epNum;
+                const epMatch = titleStr.match(/(?:episode|eps|ep)\s*-?\s*(\d+)/i);
+                if (epMatch) epNum = epMatch[1];
+                else {
+                  const allNumbers = titleStr.match(/\d+/g);
+                  epNum = allNumbers ? allNumbers[allNumbers.length - 1] : (episodes.length - ((epsPage - 1) * itemsPerPage + i));
+                }
+                const episodeId = getAnimeIdentifier(ep);
+                return (
+                  <Link key={i} href={episodeId ? `/anime/${source}/watch/${encodeURIComponent(episodeId)}?detail_slug=${encodeURIComponent(slug)}` : '#'} className="bg-[#2A2B3D] hover:bg-[#3b3c54] rounded-xl flex flex-col items-center justify-center py-2.5 gap-0.5 border border-zinc-800/50 transition-colors">
+                    <span className="text-[10px] font-bold text-zinc-400">EP</span>
+                    <span className="text-xs sm:text-sm font-bold text-white">{epNum}</span>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Pagination Controls */}
-          {totalEpsPages > 1 && (
-            <div className="flex items-center justify-between bg-[#1C1D2A] border border-zinc-800/60 rounded-xl p-3 mb-4">
-              <button 
-                onClick={() => setEpsPage(p => Math.max(1, p - 1))} 
-                disabled={epsPage === 1}
-                className="text-zinc-400 hover:text-white p-2 disabled:opacity-50"
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <div className="flex flex-col items-center">
-                <span className="text-zinc-300 text-xs font-bold">Page <span className="text-[#f40f25]">{epsPage}</span></span>
-                <span className="text-zinc-500 text-[10px]">Eps {startEps} - {endEps}</span>
+          {rekomendasi.length > 0 && (
+            <div className="w-full mb-10 bg-[#1C1D2A] p-5 sm:p-6 rounded-2xl border border-zinc-800/50">
+              <h3 className="text-xl font-bold text-white mb-5 flex items-center gap-2"><Film size={20} className="text-[#60a5fa]" /> Rekomendasi</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+                {rekomendasi.map((item, i) => {
+                  const href = getAnimeDetailHref(item, source);
+                  return (
+                    <Link key={i} href={href} className="group">
+                      <div className="aspect-square rounded-xl overflow-hidden bg-[#2A2B3D] mb-2 relative">
+                        <img src={`/api/image-proxy?url=${encodeURIComponent(item.poster || item.thumb || item.thumbnail || item.image || '')}`} alt={item.title || item.anime_name || item.name || 'Anime'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        <div className="absolute top-2 left-2 bg-[#60a5fa] text-blue-950 text-[10px] font-extrabold px-2 py-0.5 rounded-sm shadow-sm uppercase">SERIES</div>
+                      </div>
+                      <h4 className="font-bold text-sm text-white line-clamp-2">{item.title || item.anime_name || item.name}</h4>
+                    </Link>
+                  );
+                })}
               </div>
-              <button 
-                onClick={() => setEpsPage(p => Math.min(totalEpsPages, p + 1))} 
-                disabled={epsPage === totalEpsPages}
-                className="text-zinc-400 hover:text-white p-2 disabled:opacity-50"
-              >
-                <ChevronRight size={18} />
-              </button>
             </div>
           )}
-
-          <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-2 sm:gap-3">
-            {paginatedEpisodes.map((ep: any, i: number) => {
-              // Extract episode number from string if possible
-              const titleStr = String(ep.title || ep.name || ep.episode || '');
-              let epNum;
-              const epMatch = titleStr.match(/(?:episode|eps|ep)\s*-?\s*(\d+)/i);
-              if (epMatch) {
-                epNum = epMatch[1];
-              } else {
-                const allNumbers = titleStr.match(/\d+/g);
-                epNum = allNumbers ? allNumbers[allNumbers.length - 1] : (episodes.length - ((epsPage - 1) * itemsPerPage + i));
-              }
-              return (
-                <Link key={i} href={`/anime/${source}/watch/${ep.episodeId || ep.slug}?detail_slug=${slug}`} className="bg-[#2A2B3D] hover:bg-[#3b3c54] rounded-xl flex flex-col items-center justify-center py-2.5 gap-0.5 border border-zinc-800/50 transition-colors">
-                  <span className="text-[10px] font-bold text-zinc-400">EP</span>
-                  <span className="text-xs sm:text-sm font-bold text-white">{epNum}</span>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* REKOMENDASI */}
-        {rekomendasi.length > 0 && (
-          <div className="w-full mb-10 bg-[#1C1D2A] p-5 sm:p-6 rounded-2xl border border-zinc-800/50">
-            <h3 className="text-xl font-bold text-white mb-5 flex items-center gap-2">
-              <Film size={20} className="text-[#60a5fa]" /> Rekomendasi
-            </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
-              {rekomendasi.map((item, i) => (
-                <Link key={i} href={`/anime/${source}/detail/${item.animeId || item.id || item.slug || item.endpoint}`} className="group">
-                  <div className="aspect-square rounded-xl overflow-hidden bg-[#2A2B3D] mb-2 relative">
-                    <img src={`/api/image-proxy?url=${encodeURIComponent(item.poster || item.thumb)}`} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    <div className="absolute top-2 left-2 bg-[#60a5fa] text-blue-950 text-[10px] font-extrabold px-2 py-0.5 rounded-sm shadow-sm uppercase">SERIES</div>
-                  </div>
-                  <h4 className="font-bold text-sm text-white line-clamp-2">{item.title}</h4>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
         </div>
       </div>
     </div>
