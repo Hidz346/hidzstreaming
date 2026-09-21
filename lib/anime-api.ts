@@ -16,7 +16,7 @@ const fetchAnimeApi = async (path: string): Promise<AnimeResponse> => {
 };
 
 const sourcePath = (source: string) => encodeURIComponent(source);
-const pageQuery = (page: number) => `?page=${Math.max(1, page)}`;
+const normalizePage = (page: number) => (Number.isFinite(page) && page > 0 ? Math.floor(page) : 1);\nconst pageQuery = (page: number) => `?page=${normalizePage(page)}`;
 
 const getHomeResponse = (source: string) =>
   source === "otakudesu"
@@ -74,6 +74,13 @@ const getPathSlug = (value: string) => {
 };
 
 export const getAnimeIdentifier = (item: any) => {
+  const href = firstString(
+    item?.href,
+    item?.url,
+    item?.link,
+    item?.otakudesu_url
+  );
+
   const direct = firstString(
     item?.episodeId,
     item?.episode_id,
@@ -85,10 +92,16 @@ export const getAnimeIdentifier = (item: any) => {
     item?.id
   );
 
-  if (direct) return getPathSlug(direct);
+  const value = href ? getPathSlug(href) : direct ? getPathSlug(direct) : "";
+  if (!value) return "";
 
-  const href = firstString(item?.href, item?.url, item?.link, item?.otakudesu_url);
-  return href ? getPathSlug(href) : "";
+  return value
+    .trim()
+    .replace(/\\s+/g, "-")
+    .replace(/[^a-zA-Z0-9_-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .toLowerCase();
 };
 
 export const getAnimeDetailHref = (item: any, source: string = "otakudesu") => {
@@ -160,7 +173,7 @@ export const getAnimeCompleted = async (
 ) => {
   const response =
     source === "otakudesu"
-      ? await fetchAnimeApi(`/anime/complete/${Math.max(1, page)}`)
+      ? await fetchAnimeApi(`/anime/complete/${normalizePage(page)}`)
       : await getHomeResponse(source);
   const completed = extractList(response, [
     "completed",
@@ -185,7 +198,7 @@ export const getAnimeOngoing = async (
 ) => {
   const response =
     source === "otakudesu"
-      ? await fetchAnimeApi(`/anime/ongoing/${Math.max(1, page)}`)
+      ? await fetchAnimeApi(`/anime/ongoing/${normalizePage(page)}`)
       : await getHomeResponse(source);
   const ongoing = extractList(response, [
     "ongoing",
