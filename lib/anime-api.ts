@@ -1,7 +1,8 @@
-// Use the internal proxy API so the client never calls Sanka directly.
 const BASE_URL = "/api";
 
-const fetchAnimeApi = async (path: string) => {
+type AnimeResponse = Record<string, any>;
+
+const fetchAnimeApi = async (path: string): Promise<AnimeResponse> => {
   const res = await fetch(`${BASE_URL}${path}`, {
     next: { revalidate: 600 },
   });
@@ -14,23 +15,71 @@ const fetchAnimeApi = async (path: string) => {
 };
 
 const sourcePath = (source: string) => encodeURIComponent(source);
+const pageQuery = (page: number) => `?page=${Math.max(1, page)}`;
 
-export const getAnimeHome = async (source: string = "otakudesu") =>
+const getHomeResponse = (source: string) =>
   source === "otakudesu"
     ? fetchAnimeApi("/anime/home")
     : fetchAnimeApi(`/anime/${sourcePath(source)}/home`);
 
-export const getAnimeSchedule = async (source: string = "otakudesu") =>
-  fetchAnimeApi(`/anime/${sourcePath(source)}/schedule`);
+const extractList = (response: AnimeResponse, keys: string[]) => {
+  for (const key of keys) {
+    const value = response?.[key];
+    if (Array.isArray(value)) return value;
+    if (value && typeof value === "object" && Array.isArray(value.animeList)) {
+      return value.animeList;
+    }
+  }
 
-export const getAnimeDetail = async (slug: string, source: string = "otakudesu") =>
-  fetchAnimeApi(`/anime/${sourcePath(source)}/detail/${encodeURIComponent(slug)}`);
+  const data = response?.data;
+  if (Array.isArray(data)) return data;
+  if (data && typeof data === "object") {
+    for (const key of keys) {
+      const value = data[key];
+      if (Array.isArray(value)) return value;
+      if (value && typeof value === "object" && Array.isArray(value.animeList)) {
+        return value.animeList;
+      }
+    }
+  }
 
-export const getAnimeCompleted = async (page: number = 1, source: string = "otakudesu") =>
-  fetchAnimeApi(`/anime/${sourcePath(source)}/completed?page=${page}`);
+  return [];
+};
 
-export const getAnimeOngoing = async (page: number = 1, source: string = "otakudesu") =>
-  fetchAnimeApi(`/anime/${sourcePath(source)}/ongoing?page=${page}`);
+export const getAnimeHome = async (source: string = "otakudesu") =>
+  getHomeResponse(source);
+
+export const getAnimeSchedule = async (source: string = "otakudesu") => {
+  const response = await getHomeResponse(source);
+  const schedule = extractList(response, ["schedule", "schedules"]);
+  return { ...response, schedule };
+};
+
+export const getAnimeDetail = async (
+  slug: string,
+  source: string = "otakudesu"
+) =>
+  fetchAnimeApi(
+    `/anime/${sourcePath(source)}/detail/${encodeURIComponent(slug)}`
+  );
+
+export const getAnimeCompleted = async (
+  page: number = 1,
+  source: string = "otakudesu"
+) => {
+  const response = await getHomeResponse(source);
+  const completed = extractList(response, ["completed", "complete", "latestCompleted"]);
+  return { ...response, data: completed, animes: completed, animeList: completed, page };
+};
+
+export const getAnimeOngoing = async (
+  page: number = 1,
+  source: string = "otakudesu"
+) => {
+  const response = await getHomeResponse(source);
+  const ongoing = extractList(response, ["ongoing", "on_going", "latest", "animeList"]);
+  return { ...response, data: ongoing, animes: ongoing, animeList: ongoing, page };
+};
 
 export const getAnimeGenres = async (source: string = "otakudesu") =>
   fetchAnimeApi(`/anime/${sourcePath(source)}/genres`);
@@ -41,11 +90,16 @@ export const getAnimeByGenre = async (
   source: string = "otakudesu"
 ) =>
   fetchAnimeApi(
-    `/anime/${sourcePath(source)}/genre/${encodeURIComponent(slug)}?page=${page}`
+    `/anime/${sourcePath(source)}/genre/${encodeURIComponent(slug)}${pageQuery(page)}`
   );
 
-export const getAnimeEpisode = async (slug: string, source: string = "otakudesu") =>
-  fetchAnimeApi(`/anime/${sourcePath(source)}/episode/${encodeURIComponent(slug)}`);
+export const getAnimeEpisode = async (
+  slug: string,
+  source: string = "otakudesu"
+) =>
+  fetchAnimeApi(
+    `/anime/${sourcePath(source)}/episode/${encodeURIComponent(slug)}`
+  );
 
 export const searchAnime = async (
   keyword: string,
@@ -53,23 +107,37 @@ export const searchAnime = async (
   source: string = "otakudesu"
 ) =>
   fetchAnimeApi(
-    `/anime/${sourcePath(source)}/search/${encodeURIComponent(keyword)}?page=${page}`
+    `/anime/${sourcePath(source)}/search/${encodeURIComponent(keyword)}${pageQuery(page)}`
   );
 
 export const getAnimeBatch = async (slug: string, source: string = "otakudesu") =>
-  fetchAnimeApi(`/anime/${sourcePath(source)}/batch/${encodeURIComponent(slug)}`);
+  getAnimeDetail(slug, source);
 
 export const getAnimeServer = async (serverId: string, source: string = "otakudesu") =>
-  fetchAnimeApi(`/anime/${sourcePath(source)}/server/${encodeURIComponent(serverId)}`);
+  getAnimeEpisode(serverId, source);
 
 export const getAllAnime = async (page: number = 1, source: string = "otakudesu") =>
-  fetchAnimeApi(`/anime/${sourcePath(source)}/animelist?page=${page}`);
+  getAnimeOngoing(page, source);
 
-export const getAnimePopular = async (page: number = 1, source: string = "otakudesu") =>
-  fetchAnimeApi(`/anime/${sourcePath(source)}/popular?page=${page}`);
+export const getAnimePopular = async (
+  page: number = 1,
+  source: string = "otakudesu"
+) => {
+  const response = await getHomeResponse(source);
+  const popular = extractList(response, ["popular", "mostPopular", "trending", "animeList", "ongoing", "latest"]);
+  return { ...response, data: { ...(response?.data || {}), animes: popular }, animes: popular, page };
+};
 
-export const getAnimeLatest = async (page: number = 1, source: string = "otakudesu") =>
-  fetchAnimeApi(`/anime/${sourcePath(source)}/latest?page=${page}`);
+export const getAnimeLatest = async (
+  page: number = 1,
+  source: string = "otakudesu"
+) => getAnimeOngoing(page, source);
 
-export const getAnimeMovies = async (page: number = 1, source: string = "otakudesu") =>
-  fetchAnimeApi(`/anime/${sourcePath(source)}/movies?page=${page}`);
+export const getAnimeMovies = async (
+  page: number = 1,
+  source: string = "otakudesu"
+) => {
+  const response = await getHomeResponse(source);
+  const movies = extractList(response, ["movies", "movie", "animeList"]);
+  return { ...response, data: movies, animes: movies, animeList: movies, page };
+};
