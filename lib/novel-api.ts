@@ -1,16 +1,11 @@
 import { fetchSankaJson } from "./sanka-api";
 
-const fetchNovelApi = async (path: string) => {
-  try {
-    return await fetchSankaJson(path);
-  } catch (error) {
-    console.error("Novel API error", error);
-    throw error;
-  }
-};
+const fetchNovelApi = (path: string) => fetchSankaJson(path);
 
 export const getNovelHome = () => fetchNovelApi("/novel/home");
 export const getNovelHotSearch = () => fetchNovelApi("/novel/hot-search");
-export const searchNovels = (query: string) => fetchNovelApi(`/novel/search?q=${encodeURIComponent(query)}`);
+export const searchNovels = (query: string) =>
+  fetchNovelApi(`/novel/search?q=${encodeURIComponent(query)}`);
 export const getNovelGenre = (id: string) => fetchNovelApi(`/novel/genre/${id}`);
-export const getNovelChapters = (novelId: string) => fetchNovelApi(`/novel/chapters/${novelId}`);
+export const getNovelChapters = (novelId: string) =>
+  fetchNovelApi(`/novel/chapters/${novelId}`);
