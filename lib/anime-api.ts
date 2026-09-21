@@ -75,6 +75,9 @@ const getPathSlug = (value: string) => {
 
 export const getAnimeIdentifier = (item: any) => {
   const direct = firstString(
+    item?.episodeId,
+    item?.episode_id,
+    item?.episode_slug,
     item?.anime_slug,
     item?.slug,
     item?.endpoint,
