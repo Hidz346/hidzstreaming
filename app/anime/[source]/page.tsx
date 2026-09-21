@@ -36,8 +36,9 @@ export default function AnimeHomePage() {
             popRes?.data?.data ||
             []
         );
-      } catch (error) {
-        console.error("Failed to fetch anime data", error);
+      } catch {
+        setHomeData(null);
+        setPopularData([]);
       } finally {
         setLoading(false);
       }
