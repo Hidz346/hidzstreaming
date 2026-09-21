@@ -5,7 +5,7 @@ import { Calendar, ChevronLeft } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import AnimeCard3 from '../../components/AnimeCard3';
 import Sidebar from '@/app/components/Sidebar';
-import { getAnimeSchedule } from '@/lib/anime-api';
+import { getAnimeSchedule, getAnimeDetailHref } from '@/lib/anime-api';
 
 type ScheduleDay = {
   day: string;
@@ -142,7 +142,7 @@ export default function AnimeSchedulePage() {
                     <AnimeCard3
                       key={index}
                       item={anime}
-                      href={`/anime/${source}/detail/${anime.animeId || anime.id || anime.slug || anime.endpoint}`}
+                      href={getAnimeDetailHref(anime, source)}
                       type="schedule"
                     />
                   ))}
