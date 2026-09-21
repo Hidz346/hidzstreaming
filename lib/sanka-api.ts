@@ -15,7 +15,7 @@ const configuredBases = [
   .filter((url): url is string => Boolean(url))
   .map(normalizeBaseUrl);
 
-const BASE_URLS = Array.from(new Set([COMMUNITY_BASE_URL, ...configuredBases]));
+const BASE_URLS = Array.from(new Set(configuredBases));
 const PRIMARY_BASE_URL = normalizeBaseUrl(
   process.env.SANKA_API_URL || DEFAULT_BASE_URL
 );
