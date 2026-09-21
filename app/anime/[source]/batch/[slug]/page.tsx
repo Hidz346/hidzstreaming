@@ -10,6 +10,7 @@ export default function AnimeBatchPage() {
   const params = useParams();
   const router = useRouter();
   const slug = params.slug as string;
+  const source = (params?.source as string) || 'otakudesu';
   
   const [detail, setDetail] = useState<any>(null);
   const [loading, setLoading] = useState(true);
