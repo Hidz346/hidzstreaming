@@ -4,7 +4,8 @@ type AnimeResponse = Record<string, any>;
 
 const fetchAnimeApi = async (path: string): Promise<AnimeResponse> => {
   const res = await fetch(`${BASE_URL}${path}`, {
-    next: { revalidate: 600 },
+    cache: "no-store",
+    headers: { Accept: "application/json" },
   });
 
   if (!res.ok) {
