@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, PlayCircle, ChevronLeft, ChevronRight, Flame } from 'lucide-react';
 import {  useRouter , useParams } from 'next/navigation';
 import AnimeCard3 from '../../components/AnimeCard3';
-import { getAnimePopular } from '@/lib/anime-api';
+import { getAnimePopular, getAnimeDetailHref } from '@/lib/anime-api';
 
 import Sidebar from '../../../components/Sidebar';
 
@@ -25,7 +25,7 @@ export default function AnimePopularPage() {
       const mapped = items.map((item: any) => ({
         title: item.title,
         poster: item.poster || item.thumb,
-        href: `/anime/${source}/detail/${item.animeId || item.id}`,
+        href: getAnimeDetailHref(item, source),
         type: 'explore',
         status: item.status || item.status_or_day || 'POPULAR',
         year: '2026',
