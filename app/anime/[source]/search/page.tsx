@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { ArrowLeft, Search as SearchIcon, Compass, Flame, Sparkles, Star, Heart, PlayCircle, CheckCircle } from 'lucide-react';
 import {  useRouter, useSearchParams , useParams } from 'next/navigation';
 import AnimeCard3 from '../../components/AnimeCard3';
-import { searchAnime, getAnimeOngoing } from '@/lib/anime-api';
+import { searchAnime, getAnimeOngoing, getAnimeDetailHref } from '@/lib/anime-api';
 import Sidebar from '../../../components/Sidebar';
 
 function AnimeSearchContent() {
@@ -47,7 +47,7 @@ function AnimeSearchContent() {
             ...item,
             title: item.title || item.name,
             poster: item.poster || item.thumb,
-            href: `/anime/${source}/detail/${item.animeId || item.id || item.slug || item.endpoint}`,
+            href: getAnimeDetailHref(item, source),
             type: 'explore',
             status: item.status || item.status_or_day || (activeTab === 'Tamat' ? 'TAMAT' : 'ONGOING')
           }));
