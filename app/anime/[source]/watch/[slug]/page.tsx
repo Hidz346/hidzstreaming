@@ -1,7 +1,7 @@
 // @ts-nocheck
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Play, Download, Search, Settings, ShieldAlert, Monitor, Server, VolumeX, List, ChevronLeft, ChevronRight, Film } from 'lucide-react';
 import Link from 'next/link';
@@ -28,6 +28,8 @@ export default function AnimeWatchPage() {
   const itemsPerPage = 30;
   const [rekomendasi, setRekomendasi] = useState<any[]>([]);
   const [extractedVideoUrl, setExtractedVideoUrl] = useState<string | null>(null);
+  const [playerError, setPlayerError] = useState('');
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     if (!slug) return;
@@ -210,43 +212,80 @@ export default function AnimeWatchPage() {
   }, [epData, source]);
 
   useEffect(() => {
-    if (!rawServerUrl) return;
+    if (!extractedVideoUrl) return;
 
-    const resolveAndPlay = async () => {
-      setExtractedVideoUrl(null);
-      setActiveServer("");
+    let cancelled = false;
+    let hls: any = null;
+
+    const setupPlayer = async () => {
+      const video = videoRef.current;
+      if (!video) return;
+
+      setPlayerError('');
+      const isHls = /\\.m3u8(?:[?#]|$)/i.test(extractedVideoUrl);
+
+      if (!isHls) {
+        video.src = extractedVideoUrl;
+        if (autoPlay) {
+          void video.play().catch(() => {});
+        }
+        return;
+      }
 
       try {
-        if (/\.(m3u8|mp4|webm)(?:[?#]|$)/i.test(rawServerUrl)) {
-          setExtractedVideoUrl(rawServerUrl);
-          return;
+        const module = await import('hls.js');
+        const Hls = module.default;
+
+        if (cancelled) return;
+
+        if (Hls.isSupported()) {
+          hls = new Hls({
+            enableWorker: true,
+            lowLatencyMode: false,
+          });
+
+          hls.loadSource(extractedVideoUrl);
+          hls.attachMedia(video);
+
+          hls.on(Hls.Events.ERROR, (_event: any, data: any) => {
+            if (data?.fatal && !cancelled) {
+              setPlayerError('Video gagal dimuat. Coba server lain.');
+              hls?.destroy();
+              hls = null;
+            }
+          });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          video.src = extractedVideoUrl;
+          if (autoPlay) {
+            void video.play().catch(() => {});
+          }
+        } else {
+          setPlayerError('Browser ini tidak mendukung pemutaran HLS.');
         }
-
-        const extractRes = await fetch(
-          `/api/anime/extract?url=${encodeURIComponent(rawServerUrl)}`,
-          { cache: "no-store" }
-        );
-        const extractData = await extractRes.json();
-
-        const direct =
-          Array.isArray(extractData?.sources) && extractData.sources.length > 0
-            ? extractData.sources[0]
-            : null;
-
-        if (direct) {
-          setExtractedVideoUrl(direct);
-          return;
-        }
-
-        setActiveServer(rawServerUrl);
       } catch (error) {
-        console.error("Failed to resolve video source", error);
-        setActiveServer(rawServerUrl);
+        console.error('Failed to initialize HLS player', error);
+        if (!cancelled) {
+          setPlayerError('Player gagal dimuat. Coba server lain.');
+        }
       }
     };
 
-    resolveAndPlay();
-  }, [rawServerUrl]);
+    void setupPlayer();
+
+    return () => {
+      cancelled = true;
+      if (hls) {
+        hls.destroy();
+        hls = null;
+      }
+      const video = videoRef.current;
+      if (video) {
+        video.pause();
+        video.removeAttribute('src');
+        video.load();
+      }
+    };
+  }, [extractedVideoUrl, autoPlay]);
 
   // Auto-navigate pagination to the page containing the active episode
   useEffect(() => {
@@ -337,15 +376,25 @@ export default function AnimeWatchPage() {
         {/* VIDEO PLAYER */}
         <div className="w-full aspect-video bg-black sticky sm:relative top-[53px] sm:top-0 z-40">
         {extractedVideoUrl ? (
-          <video 
-            src={extractedVideoUrl} 
-            controls 
-            autoPlay 
-            className="w-full h-full"
-            controlsList="nodownload"
-          >
-            Your browser does not support the video tag.
-          </video>
+          <div className="relative w-full h-full">
+            <video
+              ref={videoRef}
+              src={/\\.m3u8(?:[?#]|$)/i.test(extractedVideoUrl) ? undefined : extractedVideoUrl}
+              controls
+              autoPlay={autoPlay}
+              playsInline
+              className="w-full h-full"
+              controlsList="nodownload"
+              onError={() => setPlayerError('Video gagal dimuat. Coba server lain.')}
+            >
+              Your browser does not support the video tag.
+            </video>
+            {playerError && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/70 px-4 text-center">
+                <p className="text-sm text-zinc-300">{playerError}</p>
+              </div>
+            )}
+          </div>
         ) : activeServer ? (
           <iframe 
             src={activeServer} 
