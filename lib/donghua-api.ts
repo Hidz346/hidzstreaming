@@ -1,17 +1,6 @@
 import { fetchSankaJson } from "./sanka-api";
 
-const fetchDonghuaApi = async (path: string) => {
-  try {
-    const data = await fetchSankaJson(`/anime/donghua${path}`);
-    if (data?.status && data.status !== "success" && !Array.isArray(data) && !data.data && !data.latest_release) {
-      throw new Error("Invalid response from Donghua API");
-    }
-    return data;
-  } catch (error) {
-    console.error("Donghua API error", error);
-    throw error;
-  }
-};
+const fetchDonghuaApi = (path: string) => fetchSankaJson(`/anime/donghua${path}`);
 
 export const getDonghuaHome = async () => {
   const data = await fetchDonghuaApi("/home/1");
@@ -36,18 +25,13 @@ export const getDonghuaHome = async () => {
     type: "series"
   }));
 
-  return {
-    recent: recentList,
-    completed: completedList
-  };
+  return { recent: recentList, completed: completedList };
 };
 
 export const searchDonghua = async (query: string) => {
   const data = await fetchDonghuaApi(`/search/${encodeURIComponent(query)}`);
-  
-  // The search API might return a list directly or under a 'search' key, we assume it's the root array or data.search
   const list = Array.isArray(data) ? data : (data.search || data.data || []);
-  
+
   return list.map((item: any) => ({
     title: item.title,
     poster: item.poster,
@@ -59,8 +43,7 @@ export const searchDonghua = async (query: string) => {
 };
 
 export const getDonghuaDetail = async (slug: string) => {
-  const data = await fetchDonghuaApi(`/detail/${slug}`);
-  const raw = data;
+  const raw = await fetchDonghuaApi(`/detail/${slug}`);
 
   return {
     title: raw.title,
@@ -87,27 +70,29 @@ export const getDonghuaDetail = async (slug: string) => {
 };
 
 export const getDonghuaEpisode = async (episodeId: string) => {
-  const data = await fetchDonghuaApi(`/episode/${episodeId}`);
-  const raw = data;
+  const raw = await fetchDonghuaApi(`/episode/${episodeId}`);
   const details = raw.donghua_details || {};
 
-  const serverList = (raw.streaming?.servers || []).map((s: any) => ({
-      title: s.name,
-      url: s.url 
+  const serverList = (raw.streaming?.servers || []).map((server: any) => ({
+    title: server.name,
+    url: server.url
   }));
 
   if (raw.streaming?.main_url) {
-      serverList.unshift({
-          title: raw.streaming.main_url.name,
-          url: raw.streaming.main_url.url
-      });
+    serverList.unshift({
+      title: raw.streaming.main_url.name,
+      url: raw.streaming.main_url.url
+    });
   }
 
   const downloadLinks: any[] = [];
   if (raw.download_url) {
     for (const [resolution, links] of Object.entries(raw.download_url)) {
-      const formattedRes = resolution.replace('download_url_', '').toUpperCase();
-      const serverLinks = Object.entries(links as Record<string, string>).map(([name, url]) => ({ name, url }));
+      const formattedRes = resolution.replace("download_url_", "").toUpperCase();
+      const serverLinks = Object.entries(links as Record<string, string>).map(
+        ([name, url]) => ({ name, url })
+      );
+
       if (serverLinks.length > 0) {
         downloadLinks.push({ resolution: formattedRes, links: serverLinks });
       }
@@ -122,15 +107,15 @@ export const getDonghuaEpisode = async (episodeId: string) => {
     servers: serverList,
     downloads: downloadLinks,
     defaultStreamingUrl: raw.streaming?.main_url?.url || "",
-    prevEpisode: raw.navigation?.previous_episode ? raw.navigation.previous_episode.slug : null,
-    nextEpisode: raw.navigation?.next_episode ? raw.navigation.next_episode.slug : null,
+    prevEpisode: raw.navigation?.previous_episode?.slug || null,
+    nextEpisode: raw.navigation?.next_episode?.slug || null,
   };
 };
 
 export const getDonghuaOngoing = async (page: number | string = 1) => {
   const data = await fetchDonghuaApi(`/ongoing/${page}`);
   const list = data.ongoing_donghua || data.data || [];
-  
+
   return list.map((item: any) => ({
     title: item.title,
     poster: item.poster,
@@ -143,7 +128,7 @@ export const getDonghuaOngoing = async (page: number | string = 1) => {
 export const getDonghuaCompleted = async (page: number | string = 1) => {
   const data = await fetchDonghuaApi(`/completed/${page}`);
   const list = data.completed_donghua || data.data || [];
-  
+
   return list.map((item: any) => ({
     title: item.title,
     poster: item.poster,
@@ -156,15 +141,20 @@ export const getDonghuaCompleted = async (page: number | string = 1) => {
 export const getDonghuaSchedule = async () => {
   const data = await fetchDonghuaApi("/schedule");
   const list = Array.isArray(data) ? data : (data.schedule || data.data || []);
-  
+
   const dayMap: Record<string, string> = {
-    'Sunday': 'Minggu', 'Monday': 'Senin', 'Tuesday': 'Selasa',
-    'Wednesday': 'Rabu', 'Thursday': 'Kamis', 'Friday': 'Jumat', 'Saturday': 'Sabtu'
+    Sunday: "Minggu",
+    Monday: "Senin",
+    Tuesday: "Selasa",
+    Wednesday: "Rabu",
+    Thursday: "Kamis",
+    Friday: "Jumat",
+    Saturday: "Sabtu"
   };
-  
-  return list.map((d: any) => ({
-    day: dayMap[d.day] || d.day,
-    animeList: (d.donghua_list || []).map((item: any) => ({
+
+  return list.map((day: any) => ({
+    day: dayMap[day.day] || day.day,
+    animeList: (day.donghua_list || []).map((item: any) => ({
       title: item.title,
       poster: item.poster,
       estimation: item.release_time || "",
@@ -177,7 +167,7 @@ export const getDonghuaSchedule = async () => {
 export const getDonghuaGenres = async () => {
   const data = await fetchDonghuaApi("/genres");
   const list = data.data || [];
-  
+
   return list.map((item: any) => ({
     title: item.name,
     genreId: item.slug
@@ -187,7 +177,7 @@ export const getDonghuaGenres = async () => {
 export const getDonghuaByGenre = async (slug: string, page: number | string = 1) => {
   const data = await fetchDonghuaApi(`/genres/${slug}/${page}`);
   const list = data.donghua_list || data.data || [];
-  
+
   return list.map((item: any) => ({
     title: item.title,
     poster: item.poster,
@@ -200,7 +190,7 @@ export const getDonghuaByGenre = async (slug: string, page: number | string = 1)
 export const getDonghuaAzList = async (letter: string, page: number | string = 1) => {
   const data = await fetchDonghuaApi(`/az-list/${letter}/${page}`);
   const list = data.donghua_list || data.data || [];
-  
+
   return list.map((item: any) => ({
     title: item.title,
     poster: item.poster,
