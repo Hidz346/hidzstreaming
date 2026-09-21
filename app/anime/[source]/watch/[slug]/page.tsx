@@ -76,7 +76,7 @@ export default function AnimeWatchPage() {
           const parsedAnimeId = epData.anime_id || episodeTitle.split(' Episode ')[0];
           hist = hist.filter((h: any) => h.animeId !== parsedAnimeId && h.title !== parsedAnimeId);
           
-          const epsMatchTitle = epData.title.match(/Episode\s*(\d+)/i);
+          const epsMatchTitle = episodeTitle.match(/Episode\s*(\d+)/i);
           const epsMatchSlug = slug.match(/\d+/);
           const epsNum = epsMatchTitle ? epsMatchTitle[1] : (epsMatchSlug ? epsMatchSlug[0] : '1');
 
@@ -151,18 +151,49 @@ export default function AnimeWatchPage() {
   useEffect(() => {
     if (!epData) return;
 
-    const candidates = getStreamCandidates(epData);
-    const first = candidates[0] || "";
+    let cancelled = false;
 
-    if (!first) {
-      setRawServerUrl("");
-      setActiveServer("");
-      setExtractedVideoUrl(null);
-      return;
-    }
+    const resolveServer = async () => {
+      const candidates = getStreamCandidates(epData);
+      const direct = candidates.find((url) => /\\.(m3u8|mp4|webm)(?:[?#]|$)/i.test(url));
+      if (direct) {
+        if (!cancelled) setRawServerUrl(direct);
+        return;
+      }
 
-    setRawServerUrl(first);
-  }, [epData]);
+      const mirrors = Array.isArray(epData?.mirrors) ? epData.mirrors : [];
+      for (const mirror of mirrors) {
+        if (!mirror?.content) continue;
+        try {
+          const response = await fetch(
+            `/api/anime/${encodeURIComponent(source)}/mirror?content=${encodeURIComponent(mirror.content)}`,
+            { cache: "no-store" }
+          );
+          if (!response.ok) continue;
+
+          const resolved = await response.json();
+          if (resolved?.url) {
+            if (!cancelled) setRawServerUrl(resolved.url);
+            return;
+          }
+        } catch {
+          // Try the next mirror.
+        }
+      }
+
+      const first = candidates[0] || "";
+      if (!cancelled) setRawServerUrl(first);
+    };
+
+    setRawServerUrl("");
+    setActiveServer("");
+    setExtractedVideoUrl(null);
+    void resolveServer();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [epData, source]);
 
   useEffect(() => {
     if (!rawServerUrl) return;
