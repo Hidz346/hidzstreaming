@@ -38,7 +38,7 @@ export default function AnimeGenreDetailPage() {
       const items = res?.data?.animeList || res?.animeList || res?.animes || (Array.isArray(res?.data) ? res.data : []);
       const mapped = items.map((item: any) => ({
         title: item.title,
-        poster: item.poster || item.thumb,
+        poster: item.poster || item.thumb || item.thumbnail || item.image,
         href: `/anime/${source}/detail/${item.animeId || item.id || item.slug || item.endpoint}`,
         type: slug.toUpperCase() === 'MOVIE' ? 'MOVIE' : 'SERIES',
         status: item.status || 'UNKNOWN',
