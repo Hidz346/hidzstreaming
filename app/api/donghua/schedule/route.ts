@@ -6,6 +6,10 @@ export async function GET() {
     const data = await getDonghuaSchedule();
     return NextResponse.json(data);
   } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch donghua schedule" }, { status: 500 });
+    console.error("Donghua schedule API error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch donghua schedule" },
+      { status: 502 }
+    );
   }
 }
