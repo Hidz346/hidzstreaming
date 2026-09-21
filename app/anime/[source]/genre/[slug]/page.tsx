@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, Film, Layers, MonitorPlay, Zap, Tv, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import AnimeCard3 from '../../../components/AnimeCard3';
-import { getAnimeByGenre } from '@/lib/anime-api';
+import { getAnimeByGenre, getAnimeDetailHref } from '@/lib/anime-api';
 import Sidebar from '../../../../components/Sidebar';
 
 export default function AnimeGenreDetailPage() {
@@ -39,7 +39,7 @@ export default function AnimeGenreDetailPage() {
       const mapped = items.map((item: any) => ({
         title: item.title,
         poster: item.poster || item.thumb || item.thumbnail || item.image,
-        href: `/anime/${source}/detail/${item.animeId || item.id || item.slug || item.endpoint}`,
+        href: getAnimeDetailHref(item, source),
         type: slug.toUpperCase() === 'MOVIE' ? 'MOVIE' : 'SERIES',
         status: item.status || 'UNKNOWN',
         year: item.year || '2026',
