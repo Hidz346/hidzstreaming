@@ -5,7 +5,7 @@ import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, CheckSquare } from 
 import {  useRouter , useParams } from 'next/navigation';
 import AnimeCard3 from '../../components/AnimeCard3';
 import Sidebar from '../../../components/Sidebar';
-import { getAnimeCompleted } from '@/lib/anime-api';
+import { getAnimeCompleted, getAnimeDetailHref } from '@/lib/anime-api';
 
 export default function AnimeCompletedPage() {
   const params = useParams();
@@ -24,7 +24,7 @@ export default function AnimeCompletedPage() {
       const mapped = items.map((item: any) => ({
         title: item.title,
         poster: item.poster || item.thumb,
-        href: `/anime/${source}/detail/${item.animeId || item.id}`,
+        href: getAnimeDetailHref(item, source),
         type: 'explore', // Use 'explore' so AnimeCard3 renders the status badge instead of forcing MOVIE
         status: item.status || item.status_or_day || 'TAMAT',
         year: '2026',
