@@ -48,6 +48,7 @@ export default function AnimeHomePage() {
 
   let ongoingData = [];
   if (Array.isArray(homeData)) ongoingData = homeData;
+  else if (Array.isArray(homeData?.ongoing_anime)) ongoingData = homeData.ongoing_anime;
   else if (Array.isArray(homeData?.ongoing)) ongoingData = homeData.ongoing;
   else if (Array.isArray(homeData?.ongoing?.animeList)) ongoingData = homeData.ongoing.animeList;
   else if (Array.isArray(homeData?.on_going)) ongoingData = homeData.on_going;
@@ -55,7 +56,8 @@ export default function AnimeHomePage() {
   else if (Array.isArray(homeData?.animeList)) ongoingData = homeData.animeList;
 
   let completedData = [];
-  if (Array.isArray(homeData?.completed)) completedData = homeData.completed;
+  if (Array.isArray(homeData?.complete_anime)) completedData = homeData.complete_anime;
+  else if (Array.isArray(homeData?.completed)) completedData = homeData.completed;
   else if (Array.isArray(homeData?.completed?.animeList)) completedData = homeData.completed.animeList;
   else if (Array.isArray(homeData?.complete)) completedData = homeData.complete;
 
