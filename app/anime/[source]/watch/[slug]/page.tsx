@@ -116,9 +116,9 @@ export default function AnimeWatchPage() {
 
     if (typeof value === "string") {
       const trimmed = value.trim();
-      if (/^https?:\\/\\//i.test(trimmed) && /\\.(m3u8|mp4|webm)(?:[?#]|$)/i.test(trimmed)) {
+      if (/^https?:\/\///i.test(trimmed) && /\.(m3u8|mp4|webm)(?:[?#]|$)/i.test(trimmed)) {
         if (!result.includes(trimmed)) result.push(trimmed);
-      } else if (/^https?:\\/\\//i.test(trimmed) && /(?:embed|player|stream|video|iframe)/i.test(trimmed)) {
+      } else if (/^https?:\/\///i.test(trimmed) && /(?:embed|player|stream|video|iframe)/i.test(trimmed)) {
         if (!result.includes(trimmed)) result.push(trimmed);
       }
       return result;
@@ -171,7 +171,7 @@ export default function AnimeWatchPage() {
       setActiveServer("");
 
       try {
-        if (/\\.(m3u8|mp4|webm)(?:[?#]|$)/i.test(rawServerUrl)) {
+        if (/\.(m3u8|mp4|webm)(?:[?#]|$)/i.test(rawServerUrl)) {
           setExtractedVideoUrl(rawServerUrl);
           return;
         }
