@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDonghuaAzList } from "@/lib/donghua-api";
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
+  const searchParams = new URL(req.url).searchParams;
   const letter = searchParams.get("letter") || "A";
   const page = searchParams.get("page") || "1";
 
@@ -10,6 +10,10 @@ export async function GET(req: NextRequest) {
     const data = await getDonghuaAzList(letter, page);
     return NextResponse.json(data);
   } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch az list" }, { status: 500 });
+    console.error("Donghua AZ list API error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch az list" },
+      { status: 502 }
+    );
   }
 }
