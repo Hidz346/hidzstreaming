@@ -222,7 +222,7 @@ export default function AnimeWatchPage() {
       if (!video) return;
 
       setPlayerError('');
-      const isHls = /\\.m3u8(?:[?#]|$)/i.test(extractedVideoUrl);
+      const isHls = /\.m3u8(?:[?#]|$)/i.test(extractedVideoUrl);
 
       if (!isHls) {
         video.src = extractedVideoUrl;
@@ -379,7 +379,7 @@ export default function AnimeWatchPage() {
           <div className="relative w-full h-full">
             <video
               ref={videoRef}
-              src={/\\.m3u8(?:[?#]|$)/i.test(extractedVideoUrl) ? undefined : extractedVideoUrl}
+              src={/\.m3u8(?:[?#]|$)/i.test(extractedVideoUrl) ? undefined : extractedVideoUrl}
               controls
               autoPlay={autoPlay}
               playsInline
