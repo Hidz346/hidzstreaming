@@ -154,8 +154,16 @@ export const getAnimeHome = async (source: string = "otakudesu") =>
   getHomeResponse(source);
 
 export const getAnimeSchedule = async (source: string = "otakudesu") => {
-  const response = await getHomeResponse(source);
-  const schedule = extractList(response, ["schedule", "schedules"]);
+  const response =
+    source === "otakudesu"
+      ? await fetchAnimeApi("/anime/otakudesu/schedule")
+      : await fetchAnimeApi(`/anime/${sourcePath(source)}/schedule`);
+  const schedule =
+    response?.schedule ||
+    response?.data?.schedule ||
+    response?.data?.schedules ||
+    response?.schedules ||
+    [];
   return { ...response, schedule };
 };
 
