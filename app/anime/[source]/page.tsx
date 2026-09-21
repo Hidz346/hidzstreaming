@@ -29,7 +29,13 @@ export default function AnimeHomePage() {
           getAnimePopular(1, source).catch(() => null)
         ]);
         setHomeData(homeRes?.data?.data || homeRes?.data || homeRes?.home || homeRes);
-        setPopularData(popRes?.data?.animes || popRes?.animes || popRes?.data?.data || popRes?.data || []);
+        setPopularData(
+          popRes?.data?.animes ||
+            popRes?.animes ||
+            popRes?.popular ||
+            popRes?.data?.data ||
+            []
+        );
       } catch (error) {
         console.error("Failed to fetch anime data", error);
       } finally {
