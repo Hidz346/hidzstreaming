@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
-import { getAllAnime } from '@/lib/anime-api';
+import { getAllAnime, getAnimeDetailHref } from '@/lib/anime-api';
 import AnimeCard3 from '../../components/AnimeCard3';
 import Sidebar from '../../../components/Sidebar';
 
@@ -96,7 +96,7 @@ export default function AnimeUnlimitedPage() {
                       ...mappedItem,
                       views: mappedItem.episodes
                     }}
-                    href={`/anime/${source}/detail/${mappedItem.animeId}`}
+                    href={getAnimeDetailHref(mappedItem, source)}
                     type="explore"
                   />
                 );
