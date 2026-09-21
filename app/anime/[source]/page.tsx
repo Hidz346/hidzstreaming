@@ -95,7 +95,7 @@ export default function AnimeHomePage() {
   const popularList = popularData.map((item: any) => ({
     title: item.title,
     poster: item.poster || item.thumb,
-    href: `/anime/${source}/detail/${item.animeId || item.id || item.slug || item.endpoint}`,
+    href: getAnimeDetailHref(item, source),
     type: item.type || 'SERIES',
     status: item.status_or_day || item.status,
     episodes: item.episode || item.episodes
@@ -262,7 +262,7 @@ export default function AnimeHomePage() {
           {popularList.length > 0 && (
             <section>
               <WidgetTitle title="Anime Populer" href={`/anime/${source}/popular`} />
-              <AnimeList items={popularList.slice(0, 15)} />
+              <AnimeList items={popularList.slice(0, 15)} source={source} />
             </section>
           )}
 
@@ -270,7 +270,7 @@ export default function AnimeHomePage() {
           {ongoingList.length > 0 && (
             <section>
               <WidgetTitle title="Sedang Tayang" href={`/anime/${source}/ongoing`} />
-              <AnimeList items={ongoingList.slice(0, 15)} />
+              <AnimeList items={ongoingList.slice(0, 15)} source={source} />
             </section>
           )}
 
@@ -278,7 +278,7 @@ export default function AnimeHomePage() {
           {completeList.length > 0 && (
             <section>
               <WidgetTitle title="Anime Tamat" href={`/anime/${source}/completed`} />
-              <AnimeList items={completeList.slice(0, 15)} />
+              <AnimeList items={completeList.slice(0, 15)} source={source} />
             </section>
           )}
 
@@ -286,7 +286,7 @@ export default function AnimeHomePage() {
           {ongoingList.length > 5 && (
             <section>
               <WidgetTitle title="Update Terbaru" href={`/anime/${source}/ongoing`} />
-              <AnimeList items={ongoingList.slice(5, 20)} />
+              <AnimeList items={ongoingList.slice(5, 20)} source={source} />
             </section>
           )}
 
