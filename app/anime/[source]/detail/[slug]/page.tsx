@@ -22,6 +22,7 @@ export default function AnimeDetailPage() {
   const [epsPage, setEpsPage] = useState(1);
   const itemsPerPage = 30;
   const [rekomendasi, setRekomendasi] = useState<any[]>([]);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -34,16 +35,15 @@ export default function AnimeDetailPage() {
         const normalized = unwrapAnimeDetail(res);
 
         if (!normalized) {
-          console.error('Failed to normalize anime detail response', {
-            source,
-            slug,
-            response: res,
-          });
+          setLoadError(true);
+          setDetail(null);
+          return;
         }
 
+        setLoadError(false);
         setDetail(normalized);
-      } catch (error) {
-        console.error('Failed to fetch anime detail', { source, slug, error });
+      } catch {
+        setLoadError(true);
         setDetail(null);
       } finally {
         setLoading(false);
@@ -81,9 +81,19 @@ export default function AnimeDetailPage() {
 
   if (!detail) {
     return (
-      <div className="min-h-screen pt-16 text-white p-4 flex flex-col items-center justify-center">
-        <p className="text-zinc-500 mb-4">Anime tidak ditemukan.</p>
-        <button onClick={() => router.back()} className="text-[#60a5fa] hover:underline">Kembali</button>
+      <div className="min-h-screen pt-16 text-white p-4 flex flex-col items-center justify-center text-center">
+        <p className="text-zinc-400 mb-2">
+          {loadError ? 'Sumber anime sedang tidak tersedia.' : 'Anime tidak ditemukan.'}
+        </p>
+        {loadError && (
+          <p className="text-zinc-600 text-xs mb-4 max-w-md">
+            Silakan coba lagi beberapa saat lagi. Data berasal dari server sumber anime.
+          </p>
+        )}
+        <div className="flex items-center gap-3">
+          <button onClick={() => window.location.reload()} className="text-[#60a5fa] hover:underline">Coba lagi</button>
+          <button onClick={() => router.back()} className="text-zinc-500 hover:text-white">Kembali</button>
+        </div>
       </div>
     );
   }
