@@ -5,7 +5,7 @@ import { ArrowLeft, PlayCircle, ChevronLeft, ChevronRight, Flame } from 'lucide-
 import {  useRouter , useParams } from 'next/navigation';
 import AnimeCard3 from '../../components/AnimeCard3';
 import Sidebar from '../../../components/Sidebar';
-import { getAnimeOngoing } from '@/lib/anime-api';
+import { getAnimeOngoing, getAnimeDetailHref } from '@/lib/anime-api';
 
 export default function AnimeOngoingPage() {
   const params = useParams();
@@ -24,7 +24,7 @@ export default function AnimeOngoingPage() {
       const mapped = items.map((item: any) => ({
         title: item.title,
         poster: item.poster || item.thumb,
-        href: `/anime/${source}/detail/${item.animeId || item.id}`,
+        href: getAnimeDetailHref(item, source),
         type: 'SERIES',
         status: 'ONGOING',
         year: '2026',
