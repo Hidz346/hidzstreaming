@@ -16,7 +16,8 @@ const fetchAnimeApi = async (path: string): Promise<AnimeResponse> => {
 };
 
 const sourcePath = (source: string) => encodeURIComponent(source);
-const normalizePage = (page: number) => (Number.isFinite(page) && page > 0 ? Math.floor(page) : 1);\nconst pageQuery = (page: number) => `?page=${normalizePage(page)}`;
+const normalizePage = (page: number) => (Number.isFinite(page) && page > 0 ? Math.floor(page) : 1);
+const pageQuery = (page: number) => `?page=${normalizePage(page)}`;
 
 const getHomeResponse = (source: string) =>
   source === "otakudesu"
@@ -97,7 +98,7 @@ export const getAnimeIdentifier = (item: any) => {
 
   return value
     .trim()
-    .replace(/\\s+/g, "-")
+    .replace(/\s+/g, "-")
     .replace(/[^a-zA-Z0-9_-]+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "")
