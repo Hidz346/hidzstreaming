@@ -8,7 +8,7 @@ import {  useRouter , useParams } from 'next/navigation';
 import AnimeList from '../../components/AnimeList';
 import Sidebar from '../../components/Sidebar';
 import WidgetTitle from '../../components/WidgetTitle';
-import { getAnimeHome, getAnimePopular } from '@/lib/anime-api';
+import { getAnimeHome, getAnimePopular, getAnimeDetailHref } from '@/lib/anime-api';
 
 export default function AnimeHomePage() {
   const params = useParams();
@@ -77,7 +77,7 @@ export default function AnimeHomePage() {
   const ongoingList = ongoingData.map((item: any) => ({
     title: item.title,
     poster: item.poster || item.thumb || item.thumbnail || item.image,
-    href: `/anime/${source}/detail/${item.animeId || item.id || item.slug || item.endpoint || item.anime_slug}`,
+    href: getAnimeDetailHref(item, source),
     type: 'SERIES',
     status: 'ONGOING',
     episodes: item.episode || item.episodes
@@ -86,7 +86,7 @@ export default function AnimeHomePage() {
   const completeList = completedData.map((item: any) => ({
     title: item.title,
     poster: item.poster || item.thumb,
-    href: `/anime/${source}/detail/${item.animeId || item.id || item.slug || item.endpoint}`,
+    href: getAnimeDetailHref(item, source),
     type: 'SERIES',
     status: 'TAMAT',
     episodes: item.episode || item.episodes
