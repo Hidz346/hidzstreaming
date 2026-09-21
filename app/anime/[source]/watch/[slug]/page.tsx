@@ -30,79 +30,41 @@ export default function AnimeWatchPage() {
 
   useEffect(() => {
     if (!slug) return;
+
     const fetchData = async () => {
       try {
         const res = await getAnimeEpisode(slug, source);
-        const data = res?.data || res?.episode_detail || res;
-        
-        // Pick first server by default so video can play instantly
-        let defaultServer = '';
-        if (data?.defaultStreamingUrl) defaultServer = data.defaultStreamingUrl;
-        else if (data?.stream_servers?.length > 0) defaultServer = data.stream_servers[0].iframe;
-        else if (data?.streams?.length > 0) defaultServer = data.streams[0].url;
-        else if (data?.streamUrl) defaultServer = data.streamUrl;
-        
-        setRawServerUrl(defaultServer);
+        const data =
+          res?.episode_detail ||
+          res?.episodeDetail ||
+          res?.data?.episode_detail ||
+          res?.data?.episodeDetail ||
+          res?.data ||
+          res;
+
         setEpData(data);
-        setLoading(false); // Stop loading immediately so player shows up
-        
-        // Asynchronously fetch full episodes from Detail API so we don't block the player
-        let animeSlug = detailSlugParam || data?.anime_id || data?.anime_slug;
-        if (!animeSlug && data?.title) {
-           const match = data.title.match(/(.+) Episode/i);
-           if (match) {
-             animeSlug = match[1].toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-           }
-        }
-        
-        if (animeSlug) {
-           import('@/lib/anime-api').then(async ({ getAnimeDetail }) => {
-             try {
-               const detailRes = await getAnimeDetail(animeSlug, source);
-               // Handle different API response structures (e.g. animasu wraps in detailRes.detail)
-               const detailData = detailRes?.detail || detailRes?.data || detailRes?.anime_detail || detailRes;
-               
-               // Merge episodes
-               const fullEps = detailData?.episodeList || detailData?.episode_list || detailData?.episodes || [];
-               const currentEps = data?.info?.episodeList || data?.episodeList || [];
-               
-               if (fullEps.length > currentEps.length) {
-                  setEpData((prev: any) => {
-                     const newData = { ...prev };
-                     if (newData.info) {
-                        newData.info.episodeList = fullEps;
-                     } else {
-                        newData.episodeList = fullEps;
-                     }
-                     return newData;
-                  });
-               }
-             } catch(e) {
-               console.error("Could not fetch full episodes", e);
-             }
-           });
-        }
-      } catch (err: any) {
-        console.error("Error:", err);
+        setLoading(false);
+      } catch (error) {
+        console.error("Failed to fetch anime episode", error);
+        setEpData(null);
         setLoading(false);
       }
-
     };
-    
+
     const fetchRek = async () => {
       try {
         const res = await getAnimeOngoing(1, source);
-        const items = res?.animeList || res?.data || res || [];
-        const arr = Array.isArray(items) ? items : [];
-        const randoms = [...arr].sort(() => 0.5 - Math.random()).slice(0, 4);
-        setRekomendasi(randoms);
-      } catch (e) { }
+        const items = res?.animeList || res?.data || res?.animes || [];
+        setRekomendasi(Array.isArray(items) ? [...items].sort(() => 0.5 - Math.random()).slice(0, 4) : []);
+      } catch {
+        setRekomendasi([]);
+      }
     };
 
     fetchData();
     fetchRek();
-  }, [slug]);
-    
+  }, [slug, source]);
+
   // Auto-save history & EXP
   useEffect(() => {
     if (epData && epData.title) {
@@ -148,54 +110,95 @@ export default function AnimeWatchPage() {
     }
   }, [slug, epData]);
 
+  const collectStreamUrls = (value: any, result: string[] = [], seen = new Set<any>()) => {
+    if (!value || result.length >= 12 || seen.has(value)) return result;
+    if (typeof value === "object") seen.add(value);
+
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (/^https?:\\/\\//i.test(trimmed) && /\\.(m3u8|mp4|webm)(?:[?#]|$)/i.test(trimmed)) {
+        if (!result.includes(trimmed)) result.push(trimmed);
+      } else if (/^https?:\\/\\//i.test(trimmed) && /(?:embed|player|stream|video|iframe)/i.test(trimmed)) {
+        if (!result.includes(trimmed)) result.push(trimmed);
+      }
+      return result;
+    }
+
+    if (Array.isArray(value)) {
+      value.forEach((item) => collectStreamUrls(item, result, seen));
+      return result;
+    }
+
+    Object.entries(value).forEach(([key, item]) => {
+      if (
+        /^(url|href|link|iframe|src|file|streamUrl|stream_url|embed|embedUrl|embed_url)$/i.test(key)
+      ) {
+        collectStreamUrls(item, result, seen);
+      } else if (/server|stream|source|video|player|quality|result|data/i.test(key)) {
+        collectStreamUrls(item, result, seen);
+      }
+    });
+
+    return result;
+  };
+
+  const getStreamCandidates = (data: any) => {
+    const candidates = collectStreamUrls(data);
+    return candidates.filter((url) => !/image|poster|thumbnail|logo/i.test(url));
+  };
+
+  useEffect(() => {
+    if (!epData) return;
+
+    const candidates = getStreamCandidates(epData);
+    const first = candidates[0] || "";
+
+    if (!first) {
+      setRawServerUrl("");
+      setActiveServer("");
+      setExtractedVideoUrl(null);
+      return;
+    }
+
+    setRawServerUrl(first);
+  }, [epData]);
+
   useEffect(() => {
     if (!rawServerUrl) return;
-    
+
     const resolveAndPlay = async () => {
+      setExtractedVideoUrl(null);
+      setActiveServer("");
+
       try {
-        let resolvedUrl = rawServerUrl;
-
-        // If the URL is a relative server path (e.g. /anime/server/...),
-        // resolve it through our proxy API first to get the actual iframe URL
-        if (rawServerUrl.startsWith('/anime/server/') || rawServerUrl.startsWith('/anime/')) {
-          const serverRes = await fetch(`/api/anime${rawServerUrl.startsWith('/anime') ? rawServerUrl.replace('/anime', '') : rawServerUrl}`);
-          const serverData = await serverRes.json();
-          if (serverData?.data?.url) {
-            resolvedUrl = serverData.data.url;
-          } else if (serverData?.url) {
-            resolvedUrl = serverData.url;
-          }
+        if (/\\.(m3u8|mp4|webm)(?:[?#]|$)/i.test(rawServerUrl)) {
+          setExtractedVideoUrl(rawServerUrl);
+          return;
         }
 
-        // If it's still a relative path, prefix the base URL
-        if (resolvedUrl.startsWith('/')) {
-          resolvedUrl = `${process.env.NEXT_PUBLIC_SANKA_API_URL || 'https://www.sankavollerei.web.id'}${resolvedUrl}`;
-        }
-
-        // Try to extract direct video source
-        const extractRes = await fetch(`/api/anime/extract?url=${encodeURIComponent(resolvedUrl)}`);
+        const extractRes = await fetch(
+          `/api/anime/extract?url=${encodeURIComponent(rawServerUrl)}`,
+          { cache: "no-store" }
+        );
         const extractData = await extractRes.json();
-        if (extractData.success && extractData.sources?.length > 0) {
-          setExtractedVideoUrl(extractData.sources[0]);
-          setActiveServer('');
-        } else {
-          setExtractedVideoUrl(null);
-          // Use the resolved URL directly in an iframe (not through proxy for external embeds)
-          if (resolvedUrl.startsWith('http')) {
-            setActiveServer(resolvedUrl);
-          } else {
-            setActiveServer(`/api/anime/iframe-proxy?url=${encodeURIComponent(resolvedUrl)}`);
-          }
+
+        const direct =
+          Array.isArray(extractData?.sources) && extractData.sources.length > 0
+            ? extractData.sources[0]
+            : null;
+
+        if (direct) {
+          setExtractedVideoUrl(direct);
+          return;
         }
-      } catch {
-        setExtractedVideoUrl(null);
-        if (rawServerUrl.startsWith('http')) {
-          setActiveServer(rawServerUrl);
-        } else {
-          setActiveServer(`/api/anime/iframe-proxy?url=${encodeURIComponent((process.env.NEXT_PUBLIC_SANKA_API_URL || 'https://www.sankavollerei.web.id') + rawServerUrl)}`);
-        }
+
+        setActiveServer(rawServerUrl);
+      } catch (error) {
+        console.error("Failed to resolve video source", error);
+        setActiveServer(rawServerUrl);
       }
     };
+
     resolveAndPlay();
   }, [rawServerUrl]);
 
@@ -243,9 +246,10 @@ export default function AnimeWatchPage() {
   const startEps = (epsPage - 1) * itemsPerPage + 1;
   const endEps = Math.min(epsPage * itemsPerPage, filteredEpisodes.length);
 
-  const streamServers = epData.server?.qualities?.flatMap((q: any) => 
-    q.serverList.map((s: any) => ({ server: `${q.title} - ${s.title}`, iframe: s.href }))
-  ) || epData.stream_servers || (epData.streams ? epData.streams.map((s: any) => ({ server: s.name, iframe: s.url })) : []);
+  const streamServers = getStreamCandidates(epData).map((url, index) => ({
+    server: `Server ${index + 1}`,
+    iframe: url,
+  }));
 
   let prevUrl = '#';
   let nextUrl = '#';
