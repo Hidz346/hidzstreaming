@@ -15,7 +15,7 @@ const configuredBases = [
   .filter((url): url is string => Boolean(url))
   .map(normalizeBaseUrl);
 
-const BASE_URLS = Array.from(new Set(configuredBases));
+const BASE_URLS = Array.from(new Set([COMMUNITY_BASE_URL, ...configuredBases]));
 const PRIMARY_BASE_URL = normalizeBaseUrl(
   process.env.SANKA_API_URL || DEFAULT_BASE_URL
 );
@@ -217,65 +217,16 @@ export async function resolveSankaMirror(content: string) {
     throw new Error("Invalid mirror token");
   }
 
-  const bases = Array.from(
-    new Set([process.env.ANIME_BASE_URL, ...BASE_URLS].filter(Boolean).map(normalizeBaseUrl))
-  );
+  const url = `${COMMUNITY_BASE_URL}/api/v1/anime/mirror?content=${encodeURIComponent(token)}`;
+  const response = await requestWithRetry(url);
+  const payload = response?.data ?? response;
 
-  let lastError: unknown;
-
-  for (const base of bases) {
-    try {
-      const nonceResponse = await fetch(`${base}/wp-admin/admin-ajax.php`, {
-        method: "POST",
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/149.0.0.0 Safari/537.36",
-          "X-Requested-With": "XMLHttpRequest",
-          Referer: `${base}/`,
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        },
-        body: new URLSearchParams({ action: "aa1208d27f29ca340c92c66d1926f13f" }),
-        cache: "no-store",
-        signal: AbortSignal.timeout(12000),
-      });
-
-      if (!nonceResponse.ok) throw new Error(`Nonce request failed: ${nonceResponse.status}`);
-      const nonceJson = await nonceResponse.json();
-      const nonce = typeof nonceJson?.data === "string" ? nonceJson.data : "";
-      if (!nonce) throw new Error("Mirror nonce unavailable");
-
-      const mirrorResponse = await fetch(`${base}/wp-admin/admin-ajax.php`, {
-        method: "POST",
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/149.0.0.0 Safari/537.36",
-          "X-Requested-With": "XMLHttpRequest",
-          Referer: `${base}/`,
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        },
-        body: new URLSearchParams({
-          id: JSON.parse(Buffer.from(token, "base64").toString("utf8")).id,
-          i: JSON.parse(Buffer.from(token, "base64").toString("utf8")).i,
-          q: JSON.parse(Buffer.from(token, "base64").toString("utf8")).q,
-          nonce,
-          action: "2a3505c93b0035d3f455df82bf976b84",
-        }),
-        cache: "no-store",
-        signal: AbortSignal.timeout(15000),
-      });
-
-      if (!mirrorResponse.ok) throw new Error(`Mirror request failed: ${mirrorResponse.status}`);
-      const mirrorJson = await mirrorResponse.json();
-      const encoded = typeof mirrorJson?.data === "string" ? mirrorJson.data : "";
-      if (!encoded) throw new Error("Mirror URL unavailable");
-
-      const html = Buffer.from(encoded, "base64").toString("utf8");
-      const match = html.match(/<iframe[^>]+src=["']([^"']+)["']/i);
-      if (!match?.[1]) throw new Error("Mirror iframe unavailable");
-
-      return { url: new URL(match[1], base).toString() };
-    } catch (error) {
-      lastError = error;
-    }
+  if (payload?.url && typeof payload.url === "string") {
+    return {
+      url: payload.url,
+      embeddable: payload.embeddable !== false,
+    };
   }
 
-  throw lastError instanceof Error ? lastError : new Error("Mirror resolution failed");
+  throw new Error("Mirror URL unavailable");
 }
