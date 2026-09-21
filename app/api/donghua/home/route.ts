@@ -6,6 +6,10 @@ export async function GET() {
     const data = await getDonghuaHome();
     return NextResponse.json(data);
   } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch donghua home" }, { status: 500 });
+    console.error("Donghua home API error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch donghua home" },
+      { status: 502 }
+    );
   }
 }
