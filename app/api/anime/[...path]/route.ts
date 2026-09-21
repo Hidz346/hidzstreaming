@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchSankaJson } from "@/lib/sanka-api";
+import { fetchSankaJson, resolveSankaMirror } from "@/lib/sanka-api";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,6 +25,13 @@ export async function GET(
   }
 
   try {
+    if (path[1] === "mirror" && req.nextUrl.searchParams.get("content")) {
+      const mirror = await resolveSankaMirror(req.nextUrl.searchParams.get("content")!);
+      return NextResponse.json(mirror, {
+        headers: { "Cache-Control": "no-store, max-age=0" },
+      });
+    }
+
     const data = await fetchSankaJson(`/anime/${joinedPath}${query}`);
 
     return NextResponse.json(data, {
