@@ -126,26 +126,26 @@ const toCommunityPath = (path: string) => {
 
   switch (endpoint) {
     case "home":
-      return "/api/home";
+      return "/api/v1/anime/home";
     case "ongoing":
-      return `/api/ongoing-anime/${rest[0] || "1"}`;
+      return `/api/v1/anime/ongoing/${rest[0] || "1"}`;
     case "completed":
     case "complete":
-      return `/api/complete-anime/${rest[0] || "1"}`;
+      return `/api/v1/anime/complete/${rest[0] || "1"}`;
     case "search":
       return rest[0]
-        ? `/api/search/${rest[0]}`
-        : "/api/search";
+        ? `/api/v1/anime/search/${rest[0]}`
+        : "/api/v1/anime/search";
     case "detail":
-      return rest[0] ? `/api/anime/${rest[0]}` : null;
+      return rest[0] ? `/api/v1/anime/detail/${rest[0]}` : null;
     case "episode":
-      return rest[0] ? `/api/episode/${rest[0]}` : null;
+      return rest[0] ? `/api/v1/anime/episode/${rest[0]}` : null;
     case "genres":
-      return "/api/genres";
+      return "/api/v1/anime/genres";
     case "genre":
-      return rest[0] ? `/api/genre/${rest[0]}` : null;
+      return rest[0] ? `/api/v1/anime/genre/${rest[0]}` : null;
     case "schedule":
-      return "/api/schedule";
+      return "/api/v1/anime/schedule";
     default:
       return null;
   }
