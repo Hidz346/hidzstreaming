@@ -67,12 +67,13 @@ export default function AnimeWatchPage() {
 
   // Auto-save history & EXP
   useEffect(() => {
-    if (epData && epData.title) {
+    if (epData && (epData.title || epData.episode)) {
       const syncHistory = async () => {
         try {
           const histStr = localStorage.getItem('hidz_anime_history') || '[]';
           let hist = JSON.parse(histStr);
-          const parsedAnimeId = epData.anime_id || epData.title.split(' Episode ')[0];
+          const episodeTitle = epData.title || epData.episode || "";
+          const parsedAnimeId = epData.anime_id || episodeTitle.split(' Episode ')[0];
           hist = hist.filter((h: any) => h.animeId !== parsedAnimeId && h.title !== parsedAnimeId);
           
           const epsMatchTitle = epData.title.match(/Episode\s*(\d+)/i);
@@ -205,7 +206,7 @@ export default function AnimeWatchPage() {
   // Auto-navigate pagination to the page containing the active episode
   useEffect(() => {
     if (!epData) return;
-    const episodeList = epData?.info?.episodeList || epData.episodeList || epData.all_episodes || [];
+    const episodeList = epData?.info?.episodeList || epData.episodeList || epData.episode_list || epData.episode_lists || epData.all_episodes || [];
     if (episodeList.length > 0 && epsQuery === '') {
       const idx = episodeList.findIndex((ep: any) => (ep.episodeId || ep.slug) === slug);
       if (idx !== -1) {
@@ -233,10 +234,16 @@ export default function AnimeWatchPage() {
   }
 
   // Parse downloads to fit the "360p", "480p", "720p", "1080p" pill UI
-  const downloads = epData?.downloadUrl?.qualities || epData.download_urls || epData.downloads || [];
+  const rawDownloads = epData?.downloadUrl?.qualities || epData.download_urls || epData.downloads || [];
+  const downloads = Array.isArray(rawDownloads)
+    ? rawDownloads
+    : [
+        ...(Array.isArray(rawDownloads?.mp4) ? rawDownloads.mp4 : []),
+        ...(Array.isArray(rawDownloads?.mkv) ? rawDownloads.mkv : []),
+      ];
   
   // Extract episodes for the list
-  const episodeList = epData?.info?.episodeList || epData.episodeList || epData.all_episodes || [];
+  const episodeList = epData?.info?.episodeList || epData.episodeList || epData.episode_list || epData.episode_lists || epData.all_episodes || [];
   const filteredEpisodes = episodeList.filter((ep: any) => 
     (ep.title || ep.name || ep.episode || '').toLowerCase().includes(epsQuery.toLowerCase())
   );
@@ -312,7 +319,7 @@ export default function AnimeWatchPage() {
         {/* TITLE & EPS */}
         <div className="text-center py-4 px-4">
           <h1 className="text-[15px] sm:text-lg font-bold text-white leading-tight">
-            {epData.title ? epData.title.split(' Episode ')[0] : 'Anime Title'}
+            {(epData.title || epData.episode || 'Anime Title').split(/\s+Episode\s+/i)[0]}
           </h1>
           <h2 className="text-[#60a5fa] font-bold text-[13px] mt-0.5">
             Episode {slug.match(/\d+/)?.[0] || '1'}
@@ -370,10 +377,10 @@ export default function AnimeWatchPage() {
                     {q.title || q.resolution || 'Download'} {q.size ? `(${q.size})` : ''}
                   </div>
                   <div className="flex flex-wrap gap-1 justify-center">
-                    {(q.serverList || q.urls || []).length > 0 ? (
-                      (q.serverList || q.urls).map((s: any, j: number) => (
+                    {(q.serverList || q.urls || q.links || []).length > 0 ? (
+                      (q.serverList || q.urls || q.links).map((s: any, j: number) => (
                         <a key={j} href={s.href || s.url || '#'} target="_blank" rel="noopener noreferrer" className="bg-[#2A2B3D] hover:bg-[#3b3c54] text-zinc-300 px-2 py-0.5 rounded-[4px] text-[10px] transition-colors whitespace-nowrap">
-                          {s.server || s.title || 'Link'}
+                          {s.server || s.provider || s.title || 'Link'}
                         </a>
                       ))
                     ) : (
