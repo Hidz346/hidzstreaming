@@ -1,7 +1,8 @@
 const DEFAULT_BASE_URL = "https://sankavollerei.web.id";
+const COMMUNITY_BASE_URL = "https://api.otakudesu.natee.my.id";
 
-const REQUEST_TIMEOUT = 5000;
-const MAX_ATTEMPTS_PER_BASE = 1;
+const REQUEST_TIMEOUT = 8000;
+const MAX_ATTEMPTS_PER_BASE = 2;
 
 const normalizeBaseUrl = (url: string) => url.replace(/\/$/, "");
 
@@ -32,9 +33,7 @@ const isRetryableStatus = (status: number) =>
   status >= 500;
 
 const isInvalidPayload = (data: unknown) => {
-  if (!data || typeof data !== "object" || Array.isArray(data)) {
-    return false;
-  }
+  if (!data || typeof data !== "object" || Array.isArray(data)) return false;
 
   const value = data as Record<string, unknown>;
 
@@ -55,7 +54,7 @@ const getRequestHeaders = () => ({
   Accept: "application/json",
   "Accept-Language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
   "User-Agent":
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/149.0.0.0 Safari/537.36",
 });
 
 async function requestJson(url: string) {
@@ -79,20 +78,19 @@ async function requestJson(url: string) {
     throw new Error(`Invalid API response from ${url}`);
   }
 
-  let data: unknown;
-
   try {
-    data = JSON.parse(body);
-  } catch {
+    const data = JSON.parse(body);
+    if (isInvalidPayload(data)) {
+      throw new Error(`Invalid API response from ${url}`);
+    }
+    return data;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("Invalid API response")) {
+      throw error;
+    }
     throw new Error(`Invalid JSON response from ${url}`);
   }
-
-  if (isInvalidPayload(data)) {
-    throw new Error(`Invalid API response from ${url}`);
-  }
-
-  return data;
-}
+};
 
 const shouldRetry = (error: unknown) => {
   const status =
@@ -100,9 +98,7 @@ const shouldRetry = (error: unknown) => {
       ? (error as Error & { status?: number }).status
       : undefined;
 
-  if (typeof status === "number") {
-    return isRetryableStatus(status);
-  }
+  if (typeof status === "number") return isRetryableStatus(status);
 
   const message = error instanceof Error ? error.message : String(error || "");
 
@@ -111,34 +107,102 @@ const shouldRetry = (error: unknown) => {
   );
 };
 
+const toCommunityPath = (path: string) => {
+  const normalized = normalizePath(path);
+  const parts = normalized.split("/").filter(Boolean);
+
+  if (parts[0] !== "anime") return null;
+
+  const source =
+    parts.length >= 3 && ["otakudesu"].includes(parts[1])
+      ? parts[1]
+      : null;
+
+  const offset = source ? 2 : 1;
+  const endpoint = parts[offset];
+  if (!endpoint) return null;
+
+  const rest = parts.slice(offset + 1);
+
+  switch (endpoint) {
+    case "home":
+      return "/api/v1/anime/home";
+    case "ongoing":
+      return `/api/v1/anime/ongoing/${rest[0] || "1"}`;
+    case "completed":
+    case "complete":
+      return `/api/v1/anime/complete/${rest[0] || "1"}`;
+    case "search":
+      return rest[0]
+        ? `/api/v1/anime/search/${rest[0]}`
+        : "/api/v1/anime/search";
+    case "detail":
+      return rest[0] ? `/api/v1/anime/detail/${rest[0]}` : null;
+    case "episode":
+      return rest[0] ? `/api/v1/anime/episode/${rest[0]}` : null;
+    case "genres":
+      return rest[0]
+        ? `/api/v1/anime/genres/${rest[0]}`
+        : "/api/v1/anime/genres";
+    case "genre":
+      return rest[0] ? `/api/v1/anime/genres/${rest[0]}` : null;
+    case "schedule":
+      return "/api/v1/anime/schedule";
+    default:
+      return null;
+  }
+};
+
+async function requestWithRetry(url: string) {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS_PER_BASE; attempt += 1) {
+    try {
+      return await requestJson(url);
+    } catch (error) {
+      lastError = error;
+      if (!shouldRetry(error) || attempt === MAX_ATTEMPTS_PER_BASE) break;
+      await new Promise((resolve) => setTimeout(resolve, 250 * attempt));
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Anime API request failed");
+}
+
 export async function fetchSankaJson(path: string) {
   let lastError: unknown;
 
   for (const base of BASE_URLS) {
-    const url = buildUrl(base, path);
+    try {
+      return await requestWithRetry(buildUrl(base, path));
+    } catch (error) {
+      lastError = error;
+    }
+  }
 
-    for (let attempt = 1; attempt <= MAX_ATTEMPTS_PER_BASE; attempt += 1) {
-      try {
-        return await requestJson(url);
-      } catch (error) {
-        lastError = error;
+  const communityPath = toCommunityPath(path);
 
-        if (!shouldRetry(error) || attempt === MAX_ATTEMPTS_PER_BASE) {
-          break;
-        }
-      }
+  if (communityPath) {
+    try {
+      return await requestWithRetry(buildUrl(COMMUNITY_BASE_URL, communityPath));
+    } catch (error) {
+      lastError = error;
     }
   }
 
   const error =
     lastError instanceof Error
       ? lastError
-      : new Error("Sanka API request failed");
+      : new Error("Anime API request failed");
 
   (error as Error & { code?: string; attemptedBases?: string[] }).code =
-    "SANKA_API_UNAVAILABLE";
-  (error as Error & { code?: string; attemptedBases?: string[] }).attemptedBases =
-    BASE_URLS;
+    "ANIME_API_UNAVAILABLE";
+  (error as Error & { code?: string; attemptedBases?: string[] }).attemptedBases = [
+    ...BASE_URLS,
+    ...(communityPath ? [COMMUNITY_BASE_URL] : []),
+  ];
 
   throw error;
 }
