@@ -1,15 +1,25 @@
 const DEFAULT_BASE_URL = "https://www.sankavollerei.web.id";
+
 const FALLBACK_BASE_URLS = [
   process.env.SANKA_API_FALLBACK_URL,
   DEFAULT_BASE_URL,
   "https://sankavollerei.web.id",
   "https://www.sankavollerei.com",
-].filter(Boolean) as string[];
+]
+  .filter(Boolean)
+  .map((url) => url!.replace(/\/$/, ""));
 
-const PRIMARY_BASE_URL = (process.env.SANKA_API_URL || DEFAULT_BASE_URL).replace(/\/$/, "");
+const PRIMARY_BASE_URL = (
+  process.env.SANKA_API_URL || DEFAULT_BASE_URL
+).replace(/\/$/, "");
 
-const normalizePath = (path: string) => (path.startsWith("/") ? path : `/${path}`);
-const buildUrl = (base: string, path: string) => `${base.replace(/\/$/, "")}${normalizePath(path)}`;
+const REQUEST_TIMEOUT = 12000;
+
+const normalizePath = (path: string) =>
+  path.startsWith("/") ? path : `/${path}`;
+
+const buildUrl = (base: string, path: string) =>
+  `${base.replace(/\/$/, "")}${normalizePath(path)}`;
 
 const isRetryableStatus = (status: number) =>
   status === 401 ||
@@ -20,25 +30,43 @@ const isRetryableStatus = (status: number) =>
   status >= 500;
 
 const isInvalidPayload = (data: unknown) => {
-  if (!data || typeof data !== "object" || Array.isArray(data)) return false;
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    return false;
+  }
 
   const value = data as Record<string, unknown>;
-  if (value.error && !value.data && !value.result && !value.anime_detail && !value.streaming) {
+
+  if (
+    value.error &&
+    !value.data &&
+    !value.result &&
+    !value.anime_detail &&
+    !value.streaming
+  ) {
     return true;
   }
 
   return value.status === false && !value.data && !value.result;
 };
 
-async function requestJson(url: string) {
+const getRequestHeaders = (base: string) => ({
+  Accept: "application/json, text/plain, */*",
+  "Accept-Language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
+  "Cache-Control": "no-cache",
+  Referer: `${base}/`,
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36",
+});
+
+async function requestJson(url: string, base: string) {
   const response = await fetch(url, {
-    headers: {
-      Accept: "application/json",
-      "User-Agent": "HidzStreaming/1.0",
-    },
+    headers: getRequestHeaders(base),
     next: { revalidate: 300 },
-    signal: AbortSignal.timeout(12000),
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT),
   });
+
+  const contentType = response.headers.get("content-type") || "";
+  const body = await response.text();
 
   if (!response.ok) {
     const error = new Error(`HTTP ${response.status} from ${url}`);
@@ -46,7 +74,18 @@ async function requestJson(url: string) {
     throw error;
   }
 
-  const data = await response.json();
+  if (!contentType.includes("application/json")) {
+    throw new Error(`Invalid API response from ${url}`);
+  }
+
+  let data: unknown;
+
+  try {
+    data = JSON.parse(body);
+  } catch {
+    throw new Error(`Invalid JSON response from ${url}`);
+  }
+
   if (isInvalidPayload(data)) {
     throw new Error(`Invalid API response from ${url}`);
   }
@@ -55,30 +94,47 @@ async function requestJson(url: string) {
 }
 
 const shouldTryAnotherBase = (error: unknown) => {
-  const status = error instanceof Error ? (error as Error & { status?: number }).status : undefined;
-  if (typeof status === "number") return isRetryableStatus(status);
+  const status =
+    error instanceof Error
+      ? (error as Error & { status?: number }).status
+      : undefined;
+
+  if (typeof status === "number") {
+    return isRetryableStatus(status);
+  }
 
   const message = error instanceof Error ? error.message : String(error || "");
-  return /fetch failed|timed out|timeout|network|invalid api response/i.test(message);
+
+  return /fetch failed|timed out|timeout|network|invalid api response|invalid json/i.test(
+    message
+  );
 };
 
 export async function fetchSankaJson(path: string) {
   const bases = Array.from(
-    new Set([PRIMARY_BASE_URL, ...FALLBACK_BASE_URLS.map((base) => base.replace(/\/$/, ""))])
+    new Set([
+      PRIMARY_BASE_URL,
+      ...FALLBACK_BASE_URLS,
+    ])
   );
 
   let lastError: unknown;
 
   for (const base of bases) {
     try {
-      return await requestJson(buildUrl(base, path));
+      return await requestJson(buildUrl(base, path), base);
     } catch (error) {
       lastError = error;
-      if (!shouldTryAnotherBase(error)) break;
+
+      if (!shouldTryAnotherBase(error)) {
+        break;
+      }
     }
   }
 
-  throw lastError instanceof Error ? lastError : new Error("Sanka API request failed");
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Sanka API request failed");
 }
 
 export function getSankaBaseUrl() {
