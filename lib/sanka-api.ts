@@ -13,7 +13,8 @@ const PRIMARY_BASE_URL = (
   process.env.SANKA_API_URL || DEFAULT_BASE_URL
 ).replace(/\/$/, "");
 
-const REQUEST_TIMEOUT = 12000;
+const REQUEST_TIMEOUT = 15000;
+const MAX_ATTEMPTS_PER_BASE = 2;
 
 const normalizePath = (path: string) =>
   path.startsWith("/") ? path : `/${path}`;
@@ -22,8 +23,6 @@ const buildUrl = (base: string, path: string) =>
   `${base.replace(/\/$/, "")}${normalizePath(path)}`;
 
 const isRetryableStatus = (status: number) =>
-  status === 401 ||
-  status === 403 ||
   status === 408 ||
   status === 425 ||
   status === 429 ||
@@ -49,23 +48,22 @@ const isInvalidPayload = (data: unknown) => {
   return value.status === false && !value.data && !value.result;
 };
 
-const getRequestHeaders = (base: string) => ({
-  Accept: "application/json, text/plain, */*",
+const getRequestHeaders = () => ({
+  Accept: "application/json",
   "Accept-Language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
-  "Cache-Control": "no-cache",
-  Referer: `${base}/`,
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36",
 });
 
-async function requestJson(url: string, base: string) {
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function requestJson(url: string) {
   const response = await fetch(url, {
-    headers: getRequestHeaders(base),
-    next: { revalidate: 300 },
+    headers: getRequestHeaders(),
+    cache: "no-store",
     signal: AbortSignal.timeout(REQUEST_TIMEOUT),
   });
 
-  const contentType = response.headers.get("content-type") || "";
   const body = await response.text();
 
   if (!response.ok) {
@@ -74,7 +72,9 @@ async function requestJson(url: string, base: string) {
     throw error;
   }
 
-  if (!contentType.includes("application/json")) {
+  const contentType = response.headers.get("content-type") || "";
+
+  if (!contentType.toLowerCase().includes("json")) {
     throw new Error(`Invalid API response from ${url}`);
   }
 
@@ -93,7 +93,7 @@ async function requestJson(url: string, base: string) {
   return data;
 }
 
-const shouldTryAnotherBase = (error: unknown) => {
+const shouldRetry = (error: unknown) => {
   const status =
     error instanceof Error
       ? (error as Error & { status?: number }).status
@@ -111,23 +111,23 @@ const shouldTryAnotherBase = (error: unknown) => {
 };
 
 export async function fetchSankaJson(path: string) {
-  const bases = Array.from(
-    new Set([
-      PRIMARY_BASE_URL,
-      ...FALLBACK_BASE_URLS,
-    ])
-  );
-
+  const bases = Array.from(new Set([PRIMARY_BASE_URL, ...FALLBACK_BASE_URLS]));
   let lastError: unknown;
 
   for (const base of bases) {
-    try {
-      return await requestJson(buildUrl(base, path), base);
-    } catch (error) {
-      lastError = error;
+    const url = buildUrl(base, path);
 
-      if (!shouldTryAnotherBase(error)) {
-        break;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS_PER_BASE; attempt += 1) {
+      try {
+        return await requestJson(url);
+      } catch (error) {
+        lastError = error;
+
+        if (!shouldRetry(error) || attempt === MAX_ATTEMPTS_PER_BASE) {
+          break;
+        }
+
+        await wait(400 * attempt);
       }
     }
   }
