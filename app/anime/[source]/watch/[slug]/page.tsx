@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Play, Download, Search, Settings, ShieldAlert, Monitor, Server, VolumeX, List, ChevronLeft, ChevronRight, Film } from 'lucide-react';
 import Link from 'next/link';
-import { getAnimeEpisode, getAnimeOngoing } from '@/lib/anime-api';
+import { getAnimeEpisode, getAnimeOngoing, getAnimeDetail, unwrapAnimeDetail } from '@/lib/anime-api';
 import Sidebar from '../../../../components/Sidebar';
 
 export default function AnimeWatchPage() {
@@ -17,6 +17,7 @@ export default function AnimeWatchPage() {
   const detailSlugParam = searchParams.get('detail_slug');
 
   const [epData, setEpData] = useState<any>(null);
+  const [episodeListData, setEpisodeListData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [rawServerUrl, setRawServerUrl] = useState<string>('');
   const [activeServer, setActiveServer] = useState<string>('');
@@ -43,6 +44,19 @@ export default function AnimeWatchPage() {
           res;
 
         setEpData(data);
+        const detailSlug = detailSlugParam || data?.anime?.slug || '';
+        if (detailSlug) {
+          try {
+            const detailRes = await getAnimeDetail(detailSlug, source);
+            const detailData = unwrapAnimeDetail(detailRes);
+            const list = detailData?.episode_lists || detailData?.episodeList || detailData?.episode_list || [];
+            setEpisodeListData(Array.isArray(list) ? list : []);
+          } catch {
+            setEpisodeListData([]);
+          }
+        } else {
+          setEpisodeListData([]);
+        }
         setLoading(false);
       } catch (error) {
         console.error("Failed to fetch anime episode", error);
@@ -155,7 +169,7 @@ export default function AnimeWatchPage() {
 
     const resolveServer = async () => {
       const candidates = getStreamCandidates(epData);
-      const direct = candidates.find((url) => /\\.(m3u8|mp4|webm)(?:[?#]|$)/i.test(url));
+      const direct = candidates.find((url) => /\.(m3u8|mp4|webm)(?:[?#]|$)/i.test(url));
       if (direct) {
         if (!cancelled) setRawServerUrl(direct);
         return;
@@ -237,7 +251,7 @@ export default function AnimeWatchPage() {
   // Auto-navigate pagination to the page containing the active episode
   useEffect(() => {
     if (!epData) return;
-    const episodeList = epData?.info?.episodeList || epData.episodeList || epData.episode_list || epData.episode_lists || epData.all_episodes || [];
+    const episodeList = episodeListData.length > 0 ? episodeListData : (epData?.info?.episodeList || epData.episodeList || epData.episode_list || epData.episode_lists || epData.all_episodes || []);
     if (episodeList.length > 0 && epsQuery === '') {
       const idx = episodeList.findIndex((ep: any) => (ep.episodeId || ep.slug) === slug);
       if (idx !== -1) {
@@ -312,8 +326,8 @@ export default function AnimeWatchPage() {
        }
        return `/anime/${source}/watch/${url.replace(/^\//, '')}${detailSlugParam ? `?detail_slug=${detailSlugParam}` : ''}`;
     };
-    prevUrl = epData.prevEpisode?.episodeId ? `/anime/${source}/watch/${epData.prevEpisode.episodeId}${detailSlugParam ? `?detail_slug=${detailSlugParam}` : ''}` : getSafeUrl(epData.prev_episode_url);
-    nextUrl = epData.nextEpisode?.episodeId ? `/anime/${source}/watch/${epData.nextEpisode.episodeId}${detailSlugParam ? `?detail_slug=${detailSlugParam}` : ''}` : getSafeUrl(epData.next_episode_url);
+    prevUrl = epData.prevEpisode?.episodeId ? `/anime/${source}/watch/${epData.prevEpisode.episodeId}${detailSlugParam ? `?detail_slug=${detailSlugParam}` : ''}` : epData.previous_episode?.slug ? `/anime/${source}/watch/${epData.previous_episode.slug}${detailSlugParam ? `?detail_slug=${detailSlugParam}` : ''}` : getSafeUrl(epData.prev_episode_url);
+    nextUrl = epData.nextEpisode?.episodeId ? `/anime/${source}/watch/${epData.nextEpisode.episodeId}${detailSlugParam ? `?detail_slug=${detailSlugParam}` : ''}` : epData.next_episode?.slug ? `/anime/${source}/watch/${epData.next_episode.slug}${detailSlugParam ? `?detail_slug=${detailSlugParam}` : ''}` : getSafeUrl(epData.next_episode_url);
   }
 
   return (
