@@ -40,14 +40,17 @@ export default function AnimeHomePage() {
   }, [source]);
 
   let ongoingData = [];
-  if (Array.isArray(homeData?.ongoing)) ongoingData = homeData.ongoing;
-  else if (homeData?.ongoing?.animeList) ongoingData = homeData.ongoing.animeList;
-  else if (homeData?.on_going) ongoingData = homeData.on_going;
+  if (Array.isArray(homeData)) ongoingData = homeData;
+  else if (Array.isArray(homeData?.ongoing)) ongoingData = homeData.ongoing;
+  else if (Array.isArray(homeData?.ongoing?.animeList)) ongoingData = homeData.ongoing.animeList;
+  else if (Array.isArray(homeData?.on_going)) ongoingData = homeData.on_going;
+  else if (Array.isArray(homeData?.latest)) ongoingData = homeData.latest;
+  else if (Array.isArray(homeData?.animeList)) ongoingData = homeData.animeList;
 
   let completedData = [];
   if (Array.isArray(homeData?.completed)) completedData = homeData.completed;
-  else if (homeData?.completed?.animeList) completedData = homeData.completed.animeList;
-  else if (homeData?.complete) completedData = homeData.complete;
+  else if (Array.isArray(homeData?.completed?.animeList)) completedData = homeData.completed.animeList;
+  else if (Array.isArray(homeData?.complete)) completedData = homeData.complete;
 
   // Auto slide hero
   useEffect(() => {
@@ -67,8 +70,8 @@ export default function AnimeHomePage() {
 
   const ongoingList = ongoingData.map((item: any) => ({
     title: item.title,
-    poster: item.poster || item.thumb,
-    href: `/anime/${source}/detail/${item.animeId || item.id || item.slug || item.endpoint}`,
+    poster: item.poster || item.thumb || item.thumbnail || item.image,
+    href: `/anime/${source}/detail/${item.animeId || item.id || item.slug || item.endpoint || item.anime_slug}`,
     type: 'SERIES',
     status: 'ONGOING',
     episodes: item.episode || item.episodes
