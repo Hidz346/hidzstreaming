@@ -1,8 +1,8 @@
 import Link from 'next/link';
-import { Clock, Film } from 'lucide-react';
 import AnimeCard3 from '../anime/components/AnimeCard3';
+import { getAnimeDetailHref } from '@/lib/anime-api';
 
-export default function AnimeList({ items }: { items: any[] }) {
+export default function AnimeList({ items, source = 'otakudesu' }: { items: any[]; source?: string }) {
   if (!items || items.length === 0) {
     return <div className="text-center p-8 text-zinc-500 font-medium">Data tidak tersedia</div>;
   }
@@ -10,7 +10,6 @@ export default function AnimeList({ items }: { items: any[] }) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 px-2 sm:px-0 mb-8 max-w-[1200px] mx-auto">
       {items.map((item, idx) => {
-        // Map common properties for AnimeCard3
         const mappedItem = {
           ...item,
           title: item.title || item.name || item.anime_name,
@@ -21,14 +20,14 @@ export default function AnimeList({ items }: { items: any[] }) {
           type: item.type || 'SERIES',
           year: item.year || '2025'
         };
-        const href = item.href || `/anime/otakudesu/detail/${item.animeId || item.id || item.slug || item.endpoint || item.anime_slug}`;
+        const href = item.href || getAnimeDetailHref(item, source);
 
         return (
-          <AnimeCard3 
-            key={idx} 
-            item={mappedItem} 
-            href={href} 
-            type="explore" 
+          <AnimeCard3
+            key={idx}
+            item={mappedItem}
+            href={href}
+            type="explore"
           />
         );
       })}
