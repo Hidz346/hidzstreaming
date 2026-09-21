@@ -98,9 +98,9 @@ export default function AnimeDetailPage() {
     );
   }
 
-  let episodes = detail.episodeList || detail.episode_list || detail.episodes || [];
+  let episodes = detail.episodeList || detail.episode_list || detail.episode_lists || detail.episodes || [];
   if (!Array.isArray(episodes) && episodes && typeof episodes === 'object') {
-    episodes = episodes.animeList || episodes.episodes || episodes.data || [];
+    episodes = episodes.animeList || episodes.episodes || episodes.episode_lists || episodes.data || [];
   }
   
   const displayedEpisodes = [...episodes].reverse();
