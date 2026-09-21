@@ -9,7 +9,6 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react", "framer-motion"],
   },
-  reactCompiler: false,
   output: "standalone",
   webpack: (config, { dev }) => {
     if (dev && process.env.DISABLE_HMR === "true") {
