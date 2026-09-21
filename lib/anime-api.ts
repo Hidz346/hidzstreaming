@@ -162,6 +162,7 @@ export const getAnimeCompleted = async (
   const completed = extractList(response, [
     "completed",
     "complete",
+    "complete_anime",
     "latestCompleted",
     "complete_anime",
     "animeList",
@@ -185,6 +186,7 @@ export const getAnimeOngoing = async (
       : await getHomeResponse(source);
   const ongoing = extractList(response, [
     "ongoing",
+    "ongoing_anime",
     "on_going",
     "latest",
     "animeList",
