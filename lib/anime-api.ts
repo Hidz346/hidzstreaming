@@ -155,12 +155,16 @@ export const getAnimeCompleted = async (
   page: number = 1,
   source: string = "otakudesu"
 ) => {
-  const response = await getHomeResponse(source);
+  const response =
+    source === "otakudesu"
+      ? await fetchAnimeApi(`/anime/complete/${Math.max(1, page)}`)
+      : await getHomeResponse(source);
   const completed = extractList(response, [
     "completed",
     "complete",
     "latestCompleted",
     "complete_anime",
+    "animeList",
   ]);
   return {
     ...response,
@@ -175,7 +179,10 @@ export const getAnimeOngoing = async (
   page: number = 1,
   source: string = "otakudesu"
 ) => {
-  const response = await getHomeResponse(source);
+  const response =
+    source === "otakudesu"
+      ? await fetchAnimeApi(`/anime/ongoing/${Math.max(1, page)}`)
+      : await getHomeResponse(source);
   const ongoing = extractList(response, [
     "ongoing",
     "on_going",
