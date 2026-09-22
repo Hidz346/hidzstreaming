@@ -317,11 +317,12 @@ export async function fetchSankaJson(path: string) {
     }
   }
 
-  const error =
+  const message =
     lastError instanceof Error
-      ? lastError
-      : new Error("Anime API request failed");
+      ? lastError.message
+      : String(lastError || "Anime API request failed");
 
+  const error = new Error(message);
   (error as Error & { code?: string; attemptedBases?: string[] }).code =
     "ANIME_API_UNAVAILABLE";
   (error as Error & { code?: string; attemptedBases?: string[] }).attemptedBases = [
