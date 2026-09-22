@@ -107,6 +107,96 @@ const shouldRetry = (error: unknown) => {
   );
 };
 
+const toDefaultOtakudesuPath = (path: string) => {
+  const normalized = normalizePath(path);
+  const parts = normalized.split("/").filter(Boolean);
+
+  if (parts[0] !== "anime" || parts[1] !== "otakudesu") return null;
+
+  const endpoint = parts[2];
+  const rest = parts.slice(3);
+
+  switch (endpoint) {
+    case "home":
+      return "/anime/home";
+    case "search":
+      return rest[0] ? "/anime/search/" + rest[0] : null;
+    case "detail":
+      return rest[0] ? "/anime/detail/" + rest[0] : null;
+    case "episode":
+      return rest[0] ? "/anime/episode/" + rest[0] : null;
+    case "genres":
+      return "/anime/genres";
+    case "genre":
+      return rest[0] ? "/anime/genre/" + rest[0] : null;
+    case "schedule":
+      return "/anime/schedule";
+    default:
+      return null;
+  }
+};
+
+const getOtakudesuDetailPath = (path: string) => {
+  const normalized = normalizePath(path);
+  const parts = normalized.split("/").filter(Boolean);
+
+  if (
+    parts.length < 4 ||
+    parts[0] !== "anime" ||
+    parts[1] !== "otakudesu" ||
+    parts[2] !== "detail" ||
+    !parts[3]
+  ) {
+    return null;
+  }
+
+  return { slug: decodeURIComponent(parts[3]) };
+};
+
+const extractAnimeCandidates = (response: any): any[] => {
+  const values = [
+    response?.data,
+    response?.data?.data,
+    response?.data?.animeList,
+    response?.animeList,
+    response?.search_results,
+    response?.result,
+    response,
+  ];
+
+  for (const value of values) {
+    if (Array.isArray(value)) return value;
+    if (value && typeof value === "object") {
+      for (const key of ["animeList", "search_results", "results", "data"]) {
+        if (Array.isArray(value[key])) return value[key];
+      }
+    }
+  }
+
+  return [];
+};
+
+const getCandidateIdentifier = (item: any) => {
+  const value =
+    item?.slug ||
+    item?.endpoint ||
+    item?.anime_slug ||
+    item?.animeId ||
+    item?.id ||
+    item?.href ||
+    item?.url;
+
+  if (!value || typeof value !== "string") return "";
+
+  try {
+    const parsed = new URL(value, "https://local.invalid");
+    const parts = parsed.pathname.split("/").filter(Boolean);
+    return parts[parts.length - 1] || "";
+  } catch {
+    return value.split("/").filter(Boolean).pop() || value;
+  }
+};
+
 const toCommunityPath = (path: string) => {
   const normalized = normalizePath(path);
   const parts = normalized.split("/").filter(Boolean);
@@ -180,11 +270,48 @@ export async function fetchSankaJson(path: string) {
     }
   }
 
+  const defaultOtakudesuPath = toDefaultOtakudesuPath(path);
+
+  if (defaultOtakudesuPath) {
+    try {
+      return await requestWithRetry(buildUrl(PRIMARY_BASE_URL, defaultOtakudesuPath));
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
   const communityPath = toCommunityPath(path);
 
   if (communityPath) {
     try {
       return await requestWithRetry(buildUrl(COMMUNITY_BASE_URL, communityPath));
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  const detailPath = getOtakudesuDetailPath(path);
+
+  if (detailPath) {
+    try {
+      const searchQuery = detailPath.slug.replace(/[-_]+/g, " ");
+      const searchData = await requestWithRetry(
+        buildUrl(PRIMARY_BASE_URL, "/anime/search/" + encodeURIComponent(searchQuery))
+      );
+      const candidates = extractAnimeCandidates(searchData);
+
+      for (const candidate of candidates.slice(0, 5)) {
+        const identifier = getCandidateIdentifier(candidate);
+        if (!identifier) continue;
+
+        try {
+          return await requestWithRetry(
+            buildUrl(PRIMARY_BASE_URL, "/anime/otakudesu/detail/" + encodeURIComponent(identifier))
+          );
+        } catch {
+          // Try the next current identifier.
+        }
+      }
     } catch (error) {
       lastError = error;
     }
