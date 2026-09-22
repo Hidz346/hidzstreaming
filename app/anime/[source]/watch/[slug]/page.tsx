@@ -211,6 +211,32 @@ export default function AnimeWatchPage() {
     };
   }, [epData, source]);
 
+  // Move the resolved server URL into the actual player state.
+  // The resolver may return either a direct media URL or an embeddable page.
+  useEffect(() => {
+    if (!rawServerUrl) {
+      setExtractedVideoUrl(null);
+      setActiveServer('');
+      return;
+    }
+
+    const isDirectMedia = /\.(m3u8|mp4|webm)(?:[?#]|$)/i.test(rawServerUrl);
+    const isEmbed = /(?:embed|player|iframe)/i.test(rawServerUrl);
+
+    if (isDirectMedia) {
+      setActiveServer('');
+      setExtractedVideoUrl(rawServerUrl);
+    } else if (isEmbed) {
+      setExtractedVideoUrl(null);
+      setActiveServer(rawServerUrl);
+    } else {
+      // Prefer the URL as a direct media source when the API does not expose
+      // a file extension. This is common with tokenized CDN stream URLs.
+      setActiveServer('');
+      setExtractedVideoUrl(rawServerUrl);
+    }
+  }, [rawServerUrl]);
+
   useEffect(() => {
     if (!extractedVideoUrl) return;
 
