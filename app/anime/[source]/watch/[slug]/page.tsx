@@ -520,6 +520,16 @@ export default function AnimeWatchPage() {
           </div>
         )}
 
+        {/* Sebagian host embed membatasi domain pemutarnya; beri jalan keluar ke halaman aslinya */}
+        {activeServer && (
+          <p className="text-center text-[11px] text-zinc-500 -mt-3 mb-6 px-4">
+            Player tidak jalan?{' '}
+            <a href={activeServer} target="_blank" rel="noopener noreferrer" className="text-[#60a5fa] hover:underline">
+              Buka di tab baru
+            </a>
+          </p>
+        )}
+
         {/* DOWNLOAD ROW */}
         <div className="border-t border-b border-zinc-800/60 py-3 mb-6">
           <div className="flex items-center w-full px-4 gap-3 overflow-x-auto custom-scrollbar">
