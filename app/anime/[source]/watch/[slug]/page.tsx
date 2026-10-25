@@ -460,8 +460,6 @@ export default function AnimeWatchPage() {
             title={epData.title || 'Pemutar anime'}
             className="w-full h-full border-none"
             allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
-            /* tanpa allow-popups & allow-top-navigation: iklan di dalam embed tidak bisa membuka tab atau mengalihkan halaman ini */
-            sandbox="allow-scripts allow-same-origin allow-presentation allow-forms"
             referrerPolicy="no-referrer"
             allowFullScreen
           ></iframe>
