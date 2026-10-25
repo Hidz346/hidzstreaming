@@ -6,13 +6,20 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
+// Dua tahap dijalankan berurutan, jadi jumlahnya harus tetap di bawah maxDuration.
+const UPSTREAM_DEADLINE = 20000;
 const LOCAL_DEADLINE = 20000;
 
-const withDeadline = <T,>(task: Promise<T>, ms: number) =>
+const NO_STORE = { "Cache-Control": "no-store, max-age=0" };
+
+const withDeadline = <T,>(task: Promise<T>, ms: number, label: string) =>
   new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error("Scraper timed out")), ms);
+    const timer = setTimeout(() => reject(new Error(`${label} timed out`)), ms);
     task.then(resolve, reject).finally(() => clearTimeout(timer));
   });
+
+const messageOf = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
 
 export async function GET(
   req: NextRequest,
@@ -36,12 +43,38 @@ export async function GET(
 
   const isMirror = path[1] === "mirror" && req.nextUrl.searchParams.get("content");
 
-  // Scraper bawaan dicoba lebih dulu; API lama hanya jadi cadangan.
+  // API utama dicoba lebih dulu; scraper bawaan hanya jadi cadangan.
+  let upstreamError: unknown;
+
+  try {
+    if (isMirror) {
+      const mirror = await resolveSankaMirror(req.nextUrl.searchParams.get("content")!);
+      return NextResponse.json(mirror, { headers: NO_STORE });
+    }
+
+    const data = await withDeadline(
+      fetchSankaJson(`/anime/${joinedPath}${query}`),
+      UPSTREAM_DEADLINE,
+      "Anime API"
+    );
+
+    return NextResponse.json(data, { headers: NO_STORE });
+  } catch (error) {
+    upstreamError = error;
+  }
+
+  // Mirror hanya dikenal oleh API utama, jadi tidak ada cadangan untuknya.
   if (!isMirror) {
+    console.warn("Anime API failed, using built-in scraper:", {
+      path: joinedPath,
+      message: messageOf(upstreamError),
+    });
+
     try {
       const local = await withDeadline(
         resolveLocalAnime(path, req.nextUrl.searchParams),
-        LOCAL_DEADLINE
+        LOCAL_DEADLINE,
+        "Scraper"
       );
 
       if (local) {
@@ -52,53 +85,34 @@ export async function GET(
         });
       }
     } catch (error) {
-      console.warn("Anime scraper failed, using fallback API:", {
+      console.warn("Built-in scraper failed:", {
         path: joinedPath,
-        message: error instanceof Error ? error.message : String(error),
+        message: messageOf(error),
       });
     }
   }
 
-  try {
-    if (isMirror) {
-      const mirror = await resolveSankaMirror(req.nextUrl.searchParams.get("content")!);
-      return NextResponse.json(mirror, {
-        headers: { "Cache-Control": "no-store, max-age=0" },
-      });
-    }
+  const upstreamStatus =
+    upstreamError instanceof Error
+      ? (upstreamError as Error & { status?: number }).status
+      : undefined;
 
-    const data = await fetchSankaJson(`/anime/${joinedPath}${query}`);
+  console.error("Anime proxy error:", {
+    path: joinedPath,
+    upstreamStatus,
+    message: messageOf(upstreamError),
+  });
 
-    return NextResponse.json(data, {
-      headers: {
-        "Cache-Control": "no-store, max-age=0",
-      },
-    });
-  } catch (error) {
-    const upstreamStatus =
-      error instanceof Error
-        ? (error as Error & { status?: number }).status
-        : undefined;
-
-    console.error("Anime proxy error:", {
+  return NextResponse.json(
+    {
+      error: "Anime upstream unavailable",
+      code: "ANIME_UPSTREAM_UNAVAILABLE",
+      status: upstreamStatus || 502,
       path: joinedPath,
-      upstreamStatus,
-      message: error instanceof Error ? error.message : String(error),
-    });
-
-    return NextResponse.json(
-      {
-        error: "Anime upstream unavailable",
-        code: "ANIME_UPSTREAM_UNAVAILABLE",
-        status: upstreamStatus || 502,
-        path: joinedPath,
-      },
-      {
-        status: 502,
-        headers: {
-          "Cache-Control": "no-store, max-age=0",
-        },
-      }
-    );
-  }
+    },
+    {
+      status: 502,
+      headers: NO_STORE,
+    }
+  );
 }

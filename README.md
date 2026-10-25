@@ -56,7 +56,7 @@ Agar web Anda bisa diakses oleh semua orang di internet (online), kita akan meng
 - **Error saat Deploy di Vercel?**
   Pastikan `npm install` berjalan tanpa error di komputer lokal Anda terlebih dahulu sebelum melakukan deploy.
 - **Data anime kosong atau video anime tidak mau diputar?**
-  Data anime diambil langsung dari Samehadaku lewat scraper bawaan (`lib/samehadaku`). Jika domain sumbernya berganti, isi Environment Variable `SAMEHADAKU_BASE_URL` di Vercel dengan domain baru (contoh: `https://v2.samehadaku.how`), lalu Redeploy. Selama scraper gagal, API pihak ketiga lama dipakai sebagai cadangan.
+  Data anime diambil lebih dulu dari API pihak ketiga (`SANKA_API_URL`, bawaan `https://sankavollerei.web.id`). Jika API itu gagal atau timeout, scraper bawaan (`lib/samehadaku`) dipakai sebagai cadangan. Jika domain sumber scraper berganti, isi Environment Variable `SAMEHADAKU_BASE_URL` di Vercel dengan domain baru (contoh: `https://v2.samehadaku.how`), lalu Redeploy.
 - **Gambar Donghua/Anime/Komik/Novel tidak muncul?**
   Web ini menggunakan API *scraping* pihak ketiga untuk seluruh datanya (Anime, Donghua, Komik, Novel). Jika gambar atau data tidak muncul, kemungkinan sumber aslinya sedang down atau mengganti sistem proteksinya.
 
