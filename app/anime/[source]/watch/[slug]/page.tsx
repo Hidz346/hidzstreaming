@@ -55,6 +55,9 @@ export default function AnimeWatchPage() {
           res;
 
         setEpData(data);
+        // Player langsung tampil begitu data episode siap; daftar episode menyusul
+        // tanpa menahan halaman saat server detail lambat.
+        setLoading(false);
         const detailSlug = detailSlugParam || data?.anime?.slug || '';
         if (detailSlug) {
           try {
@@ -68,7 +71,6 @@ export default function AnimeWatchPage() {
         } else {
           setEpisodeListData([]);
         }
-        setLoading(false);
       } catch (error) {
         console.error("Failed to fetch anime episode", error);
         setEpData(null);
