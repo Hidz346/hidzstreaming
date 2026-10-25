@@ -98,18 +98,21 @@ export default function AnimeWatchPage() {
           const histStr = localStorage.getItem('hidz_anime_history') || '[]';
           let hist = JSON.parse(histStr);
           const episodeTitle = epData.title || epData.episode || "";
-          const parsedAnimeId = epData.anime_id || episodeTitle.split(' Episode ')[0];
-          hist = hist.filter((h: any) => h.animeId !== parsedAnimeId && h.title !== parsedAnimeId);
+          const animeTitle = episodeTitle.split(' Episode ')[0];
+          // Judul bukan slug, jadi tidak boleh dipakai untuk memanggil API detail.
+          const animeSlug = detailSlugParam || epData.anime?.slug || epData.anime_id || '';
+          const parsedAnimeId = animeSlug || animeTitle;
+          hist = hist.filter((h: any) => h.animeId !== parsedAnimeId && h.animeId !== animeTitle && h.title !== animeTitle);
           
           const epsMatchTitle = episodeTitle.match(/Episode\s*(\d+)/i);
           const epsNum = epsMatchTitle ? epsMatchTitle[1] : getEpisodeNumber(slug);
 
           let poster = epData.thumb || epData.poster || epData.image || '';
           
-          if (!poster) {
+          if (!poster && animeSlug) {
             try {
               const { getAnimeDetail } = await import('@/lib/anime-api');
-              const detailRes = await getAnimeDetail(parsedAnimeId, source);
+              const detailRes = await getAnimeDetail(animeSlug, source);
               const detailData = detailRes?.data || detailRes?.anime_detail || detailRes;
               if (detailData?.poster || detailData?.thumb) {
                 poster = detailData.poster || detailData.thumb;
@@ -120,7 +123,7 @@ export default function AnimeWatchPage() {
           }
 
           hist.unshift({
-            title: parsedAnimeId,
+            title: animeTitle,
             animeId: parsedAnimeId,
             episodeId: slug,
             lastEpisode: epsNum,
@@ -133,7 +136,7 @@ export default function AnimeWatchPage() {
       };
       syncHistory();
     }
-  }, [slug, epData]);
+  }, [slug, epData, detailSlugParam]);
 
   const collectStreamUrls = (value: any, result: string[] = [], seen = new Set<any>()) => {
     if (!value || result.length >= 12 || seen.has(value)) return result;
