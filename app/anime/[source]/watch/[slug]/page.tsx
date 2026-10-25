@@ -522,7 +522,9 @@ export default function AnimeWatchPage() {
 
         {/* Sebagian host embed membatasi domain pemutarnya; beri jalan keluar ke halaman aslinya */}
         {activeServer && (
-          <p className="text-center text-[11px] text-zinc-500 -mt-3 mb-6 px-4">
+          <p className="text-center text-[11px] text-zinc-500 -mt-3 mb-6 px-4 leading-relaxed">
+            Klik play pertama bisa membuka iklan dari server video. Tutup tab itu lalu kembali ke sini.
+            <br />
             Player tidak jalan?{' '}
             <a href={activeServer} target="_blank" rel="noopener noreferrer" className="text-[#60a5fa] hover:underline">
               Buka di tab baru
